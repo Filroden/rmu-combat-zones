@@ -10,8 +10,7 @@ const SETTING_TOGGLE = "showZones";
 
 Hooks.once("init", () => {
     game.settings.register(MODULE_ID, SETTING_TOGGLE, {
-        name: "RMU-ZONES.SettingName",
-        hint: "RMU-ZONES.SettingHint",
+        name: "Show Combat Zones",
         scope: "client",
         config: false,
         type: Boolean,
@@ -32,8 +31,9 @@ Hooks.on("getSceneControlButtons", (controls) => {
             icon: "fas fa-circle-dot",
             toggle: true,
             active: game.settings.get(MODULE_ID, SETTING_TOGGLE),
-            onClick: (toggled) => {
-                game.settings.set(MODULE_ID, SETTING_TOGGLE, toggled);
+            onChange: () => {
+                const current = game.settings.get(MODULE_ID, SETTING_TOGGLE);
+                game.settings.set(MODULE_ID, SETTING_TOGGLE, !current);
             }
         };
 
@@ -117,7 +117,7 @@ class RMUZoneRenderer {
                 if (item.type !== "weapon" && item.type !== "shield") continue;
                 
                 const isMelee = sys.usages?.some(u => 
-                    ["Melee Weapons", "Shield", "Martial Arts"].includes(u.trainingGroup)
+                    ["Melee Weapons", "Shield"].includes(u.trainingGroup)
                 );
                 if (!isMelee) continue;
 
