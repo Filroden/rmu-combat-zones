@@ -6,6 +6,21 @@
 const MODULE_ID = "rmu-combat-zones";
 const SETTING_TOGGLE = "showZones";
 
+// --- Configuration Constants ---
+const ZONE_COLORS = {
+    FRONT: 0x00FF00,
+    FLANK: 0xFFFF00,
+    REAR: 0xFF0000,
+    SPOKE: 0x333333
+};
+
+const ZONES = [
+    { start: 0, end: Math.PI, color: ZONE_COLORS.FRONT },
+    { start: Math.PI, end: Math.PI + Math.PI / 3, color: ZONE_COLORS.FLANK },
+    { start: -Math.PI / 3, end: 0, color: ZONE_COLORS.FLANK },
+    { start: Math.PI + Math.PI / 3, end: Math.PI + 2 * Math.PI / 3, color: ZONE_COLORS.REAR }
+];
+
 // --- Initialisation ---
 
 Hooks.once("init", () => {
@@ -15,33 +30,37 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true,
-        onChange: () => canvas.tokens.placeables.forEach(t => RMUZoneRenderer.update(t))
+        onChange: () => {
+            canvas.tokens.placeables.forEach(t => {
+                t._rmuDirty = true; // Force redraw
+                RMUZoneRenderer.update(t);
+            });
+        }
     });
 });
 
-// --- Scene Controls (The HUD Button) ---
+// --- Scene Controls ---
 
 Hooks.on("getSceneControlButtons", (controls) => {
     const tokenLayer = controls.tokens;
+    if (!tokenLayer) return;
 
-    if (tokenLayer) {
-        const rmuTool = {
-            name: "rmu-zones",
-            title: "RMU-ZONES.ToggleTitle",
-            icon: "fas fa-circle-dot",
-            toggle: true,
-            active: game.settings.get(MODULE_ID, SETTING_TOGGLE),
-            onChange: () => {
-                const current = game.settings.get(MODULE_ID, SETTING_TOGGLE);
-                game.settings.set(MODULE_ID, SETTING_TOGGLE, !current);
-            }
-        };
-
-        if (Array.isArray(tokenLayer.tools)) {
-            tokenLayer.tools.push(rmuTool);
-        } else {
-            tokenLayer.tools["rmu-zones"] = rmuTool;
+    const rmuTool = {
+        name: "rmu-zones",
+        title: "RMU-ZONES.ToggleTitle",
+        icon: "fas fa-circle-dot",
+        toggle: true,
+        active: game.settings.get(MODULE_ID, SETTING_TOGGLE),
+        onChange: () => {
+            const current = game.settings.get(MODULE_ID, SETTING_TOGGLE);
+            game.settings.set(MODULE_ID, SETTING_TOGGLE, !current);
         }
+    };
+
+    if (Array.isArray(tokenLayer.tools)) {
+        tokenLayer.tools.push(rmuTool);
+    } else {
+        tokenLayer.tools["rmu-zones"] = rmuTool;
     }
 });
 
@@ -50,66 +69,91 @@ Hooks.on("getSceneControlButtons", (controls) => {
 class RMUZoneRenderer {
 
     static update(token) {
-        // 1. Clean up existing graphics
-        if (token.rmuZoneGraphics) {
-            token.rmuZoneGraphics.destroy();
-            token.rmuZoneGraphics = null;
+        // 1. Safety Checks
+        if (!canvas.scene || !token.actor || !token.visible) {
+            this.clear(token);
+            return;
         }
 
-        // 2. Check Conditions
         const show = game.settings.get(MODULE_ID, SETTING_TOGGLE);
-        // Safety: Must have actor and be visible
-        if (!show || !token.actor || !token.visible) return;
-
-        // 3. Gather Data
-        const data = this.getData(token);
-        if (!data) return;
-
-        // 4. Create Container
-        const container = new PIXI.Container();
-
-        // Scale & Positioning
-        container.position.set(token.w / 2, token.h / 2);
-        
-        // Rotation
-        if (token.mesh) {
-            container.rotation = token.mesh.rotation;
+        if (!show) {
+            this.clear(token);
+            return;
         }
 
-        token.addChildAt(container, 0);
-        token.rmuZoneGraphics = container;
+        // 2. Data Gathering
+        const bodyZoneFt = Number(token.actor.system.appearance?._combatZone) || 0;
+        if (!bodyZoneFt) {
+            this.clear(token);
+            return;
+        }
 
-        // Draw Body Zone
-        this.drawBodyZone(container, data.bodyRadiusPx);
+        // 3. Smart Redraw Check (Optimization)
+        const rotation = token.document.rotation;
+        const width = token.w;
+        const height = token.h;
+        const weaponReaches = this.getWeaponReaches(token, bodyZoneFt);
+        
+        // If nothing changed, exit early to save performance
+        if (!token._rmuDirty && 
+            token._rmuLastState?.rotation === rotation &&
+            token._rmuLastState?.width === width &&
+            token._rmuLastState?.height === height &&
+            this.arraysEqual(token._rmuLastState?.reaches, weaponReaches)) {
+            return;
+        }
 
-        // Draw Front Indicator
-        this.drawFrontArrow(container, data.bodyRadiusPx);
+        // 4. Graphics Initialization (Reuse if exists)
+        let container = token.rmuZoneGraphics;
+        if (!container) {
+            container = new PIXI.Container();
+            token.addChildAt(container, 0);
+            token.rmuZoneGraphics = container;
+        }
+        
+        container.removeChildren(); 
 
-        // Draw Weapon Reaches
-        if (data.reachRadiiPx.length > 0) {
-            this.drawReachArcs(container, data.reachRadiiPx);
+        // 5. Update Transform (Sync with token)
+        container.position.set(token.w / 2, token.h / 2);
+        container.rotation = Math.toRadians(rotation);
+
+        // 6. Draw
+        const gridData = {
+            gridDist: canvas.scene.grid.distance,
+            gridSize: canvas.scene.grid.size
+        };
+        const bodyRadiusPx = this.ftToPx(bodyZoneFt, gridData);
+        const reachRadiiPx = weaponReaches.map(ft => this.ftToPx(ft, gridData));
+
+        this.drawBodyZone(container, bodyRadiusPx);
+        this.drawFrontArrow(container, bodyRadiusPx);
+
+        if (reachRadiiPx.length > 0) {
+            this.drawReachArcs(container, reachRadiiPx);
             
-            const maxReach = Math.max(...data.reachRadiiPx);
-            // Draw spokes only if reach extends beyond the body zone (plus buffer)
-            if (maxReach > data.bodyRadiusPx + 1) { 
-                 this.drawSectorSpokes(container, data.bodyRadiusPx, maxReach);
+            const maxReach = Math.max(...reachRadiiPx);
+            if (maxReach > bodyRadiusPx + 1) { 
+                 this.drawSectorSpokes(container, bodyRadiusPx, maxReach);
             }
+        }
+
+        // 7. Save State
+        token._rmuLastState = { rotation, width, height, reaches: weaponReaches };
+        token._rmuDirty = false;
+    }
+
+    static clear(token) {
+        if (token.rmuZoneGraphics) {
+            token.rmuZoneGraphics.destroy({children: true});
+            token.rmuZoneGraphics = null;
+            token._rmuLastState = null;
         }
     }
 
-    static getData(token) {
-        const actor = token.actor;
-        const gridDist = canvas.scene.grid.distance; 
-        const gridSize = canvas.scene.grid.size;     
-        const ftToPx = (ft) => (ft / gridDist) * gridSize;
-
-        // A. Body Zone
-        const bodyZoneFt = actor.system.appearance?._combatZone || 0;
-        if (!bodyZoneFt) return null;
-
-        // B. Weapon Reaches
+    static getWeaponReaches(token, bodyZoneFt) {
         const reachRadii = new Set([bodyZoneFt]);
-        
+        const actor = token.actor;
+
         if (actor.items) {
             for (const item of actor.items) {
                 const sys = item.system;
@@ -121,70 +165,56 @@ class RMUZoneRenderer {
                 );
                 if (!isMelee) continue;
 
-                // --- DATA PARSING ---
-                // Prefer derived _length (adjusted for size), fallback to raw length
                 const rawVal = sys._length || sys.length || "0";
                 const valStr = String(rawVal).trim();
-                
                 let weaponLenFt = 0;
 
-                // Regex Patterns:
-                // 1. Feet & Inches:  1'6"  or  1' 6
-                const ftInPattern = /^(\d+)'(?:\s*(\d+)"?)?/;
-                // 2. Just Inches:    7"
-                const inPattern = /^(\d+)"/;
-                // 3. Just Number:    4  or  4.5 (assumed feet)
-                const numPattern = /^(\d+(?:\.\d+)?)/;
-
-                const matchFt = valStr.match(ftInPattern);
-                const matchIn = valStr.match(inPattern);
-                const matchNum = valStr.match(numPattern);
+                const matchFt = valStr.match(/^(\d+)'(?:\s*(\d+)"?)?/);
+                const matchIn = valStr.match(/^(\d+)"/);
+                const matchNum = valStr.match(/^(\d+(?:\.\d+)?)/);
 
                 if (matchFt) {
-                    // e.g. "1'6" -> 1 ft + 6/12 ft
-                    const feet = parseFloat(matchFt[1]) || 0;
-                    const inches = parseFloat(matchFt[2]) || 0;
-                    weaponLenFt = feet + (inches / 12);
-                } 
-                else if (matchIn) {
-                    // e.g. "7"" -> 0 ft + 7/12 ft
-                    const inches = parseFloat(matchIn[1]) || 0;
-                    weaponLenFt = inches / 12;
-                } 
-                else if (matchNum) {
-                    // e.g. "4" -> 4 ft
+                    weaponLenFt = (parseFloat(matchFt[1]) || 0) + ((parseFloat(matchFt[2]) || 0) / 12);
+                } else if (matchIn) {
+                    weaponLenFt = (parseFloat(matchIn[1]) || 0) / 12;
+                } else if (matchNum) {
                     weaponLenFt = parseFloat(matchNum[1]);
                 }
 
-                if (weaponLenFt > 0) {
-                    reachRadii.add(bodyZoneFt + weaponLenFt);
-                }
+                if (weaponLenFt > 0) reachRadii.add(bodyZoneFt + weaponLenFt);
             }
         }
-
-        return {
-            bodyRadiusPx: ftToPx(bodyZoneFt),
-            reachRadiiPx: Array.from(reachRadii).map(ft => ftToPx(ft)).sort((a,b) => a-b)
-        };
+        return Array.from(reachRadii).sort((a,b) => a-b);
     }
+
+    static ftToPx(ft, gridData) {
+        return (ft / gridData.gridDist) * gridData.gridSize;
+    }
+
+    static arraysEqual(a, b) {
+        if (a === b) return true;
+        if (a == null || b == null) return false;
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; ++i) {
+            if (a[i] !== b[i]) return false;
+        }
+        return true;
+    }
+
+    // --- Drawing Primitives ---
 
     static drawBodyZone(g, radius) {
         const graphics = new PIXI.Graphics();
         g.addChild(graphics);
 
-        const drawWedge = (start, end, color) => {
+        ZONES.forEach(zone => {
             graphics.lineStyle(0); 
-            graphics.beginFill(color, 0.15); 
+            graphics.beginFill(zone.color, 0.15); 
             graphics.moveTo(0, 0); 
-            graphics.arc(0, 0, radius, start, end);
+            graphics.arc(0, 0, radius, zone.start, zone.end);
             graphics.lineTo(0, 0); 
             graphics.endFill();
-        };
-
-        drawWedge(0, Math.PI, 0x00FF00); // Front
-        drawWedge(Math.PI, Math.PI + Math.PI/3, 0xFFFF00); // Right
-        drawWedge(-Math.PI/3, 0, 0xFFFF00); // Left
-        drawWedge(Math.PI + Math.PI/3, Math.PI + 2*Math.PI/3, 0xFF0000); // Rear
+        });
     }
 
     static drawFrontArrow(g, radius) {
@@ -192,47 +222,34 @@ class RMUZoneRenderer {
         g.addChild(graphics);
         
         const angle = Math.PI / 2;
-        const endDist = radius * 1.0; 
+        const endDist = radius; 
         const endX = endDist * Math.cos(angle);
         const endY = endDist * Math.sin(angle);
         
-        graphics.lineStyle(3, 0x00FF00, 1.0);
+        graphics.lineStyle(3, ZONE_COLORS.FRONT, 1.0);
 
         const headSize = radius * 0.15;
-        const leftWingAngle = angle - (Math.PI / 8); 
-        const rightWingAngle = angle + (Math.PI / 8);
+        const leftWing = angle - (Math.PI / 8); 
+        const rightWing = angle + (Math.PI / 8);
         
         graphics.moveTo(endX, endY);
-        graphics.lineTo(
-            endX - (headSize * Math.cos(leftWingAngle)), 
-            endY - (headSize * Math.sin(leftWingAngle))
-        );
+        graphics.lineTo(endX - (headSize * Math.cos(leftWing)), endY - (headSize * Math.sin(leftWing)));
         
         graphics.moveTo(endX, endY);
-        graphics.lineTo(
-            endX - (headSize * Math.cos(rightWingAngle)),
-            endY - (headSize * Math.sin(rightWingAngle))
-        );
+        graphics.lineTo(endX - (headSize * Math.cos(rightWing)), endY - (headSize * Math.sin(rightWing)));
     }
 
     static drawReachArcs(g, radii) {
         const graphics = new PIXI.Graphics();
         g.addChild(graphics);
 
-        const ranges = [
-            { start: 0, end: Math.PI, color: 0x00FF00 },
-            { start: Math.PI, end: Math.PI + Math.PI/3, color: 0xFFFF00 },
-            { start: -Math.PI/3, end: 0, color: 0xFFFF00 },
-            { start: Math.PI + Math.PI/3, end: Math.PI + 2*Math.PI/3, color: 0xFF0000 }
-        ];
-
         radii.forEach(radius => {
-            ranges.forEach(range => {
-                graphics.lineStyle(3, range.color, 0.8);
-                const startX = radius * Math.cos(range.start);
-                const startY = radius * Math.sin(range.start);
+            ZONES.forEach(zone => {
+                graphics.lineStyle(3, zone.color, 0.8);
+                const startX = radius * Math.cos(zone.start);
+                const startY = radius * Math.sin(zone.start);
                 graphics.moveTo(startX, startY);
-                graphics.arc(0, 0, radius, range.start, range.end);
+                graphics.arc(0, 0, radius, zone.start, zone.end);
             });
         });
     }
@@ -240,25 +257,18 @@ class RMUZoneRenderer {
     static drawSectorSpokes(g, innerRadius, outerRadius) {
         const graphics = new PIXI.Graphics();
         g.addChild(graphics);
+        graphics.lineStyle(2, ZONE_COLORS.SPOKE, 0.5);
 
-        const boundaries = [
-            0, Math.PI, -Math.PI/3, Math.PI + Math.PI/3
-        ];
-
-        graphics.lineStyle(2, 0x333333, 0.5);
+        const boundaries = [0, Math.PI, -Math.PI/3, Math.PI + Math.PI/3];
 
         boundaries.forEach(angle => {
-            const startX = innerRadius * Math.cos(angle);
-            const startY = innerRadius * Math.sin(angle);
-            const endX = outerRadius * Math.cos(angle);
-            const endY = outerRadius * Math.sin(angle);
-            graphics.moveTo(startX, startY);
-            graphics.lineTo(endX, endY);
+            graphics.moveTo(innerRadius * Math.cos(angle), innerRadius * Math.sin(angle));
+            graphics.lineTo(outerRadius * Math.cos(angle), outerRadius * Math.sin(angle));
         });
     }
 }
 
-// --- Hook Registration ---
+// --- Event Listeners ---
 
 Hooks.on("refreshToken", (token) => {
     RMUZoneRenderer.update(token);
@@ -266,13 +276,22 @@ Hooks.on("refreshToken", (token) => {
 
 Hooks.on("updateActor", (actor) => {
     if (!actor) return;
-    const tokens = actor.getActiveTokens();
-    tokens.forEach(t => RMUZoneRenderer.update(t));
+    actor.getActiveTokens().forEach(t => {
+        t._rmuDirty = true; // Force update on next refresh
+        RMUZoneRenderer.update(t);
+    });
 });
 
 Hooks.on("updateItem", (item) => {
     if(item.parent) {
-        const tokens = item.parent.getActiveTokens();
-        tokens.forEach(t => RMUZoneRenderer.update(t));
+        item.parent.getActiveTokens().forEach(t => {
+            t._rmuDirty = true;
+            RMUZoneRenderer.update(t);
+        });
     }
+});
+
+// Cleanup when token is removed from canvas
+Hooks.on("destroyToken", (token) => {
+    RMUZoneRenderer.clear(token);
 });
