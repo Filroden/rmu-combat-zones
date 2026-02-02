@@ -24,7 +24,11 @@
   "esmodules": [ "main.js" ],
   "languages": [
     { "lang": "en", "name": "English", "path": "languages/en.json" },
-    { "lang": "en-GB", "name": "English (UK)", "path": "languages/en-gb.json" }
+    { "lang": "en-GB", "name": "English (UK)", "path": "languages/en-gb.json" },
+    { "lang": "es", "name": "Español (Spanish)", "path": "languages/es.json" },
+    { "lang": "es-419", "name": "Español (Spanish - Latin America)", "path": "languages/es-419.json" },
+    { "lang": "fr", "name": "Français (French)", "path": "languages/fr.json" },
+    { "lang": "sv", "name": "Svenska (Swedish)", "path": "languages/sv.json" }
   ],
   "url": "https://github.com/Filroden/rmu-combat-zones",
   "manifest": "https://github.com/Filroden/rmu-combat-zones/releases/latest/download/module.json",
