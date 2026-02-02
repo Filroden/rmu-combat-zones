@@ -1,26 +1,58 @@
-# This will be my greatest work
+# RMU Combat Zones
 
-## Change
-* Pushing to fvtt? Add PUBLIC_REPO_TOKEN to this new REPO.
-* Edit module.json fields: _id_, _title_, _description_, _styles_, _manifest_ and _download_
-  **ATTENTION** the _id_ needs to be coordinated with changes to both _manifest_ and _download_. 
-* Edit github `.github/workflows/auto-release.yaml` 
-  
-  ```
-    # Replace MODULE-FOUNDRY-ID with the name of module id used in module.json
-    jobs:
-      release:
-        runs-on: ubuntu-latest
-    env:
-        PUBLIC_REPO: Filroden/fvtt
-        PUBLIC_LATEST_RELEASE_TAG: MODULE-FOUNDRY-ID-latest
-        PUBLIC_RELEASE_MSG: Whatever description you want
-        MODULE_ZIP_NAME: MODULE-FOUNDRY-ID.zip
-  ```
-* Edit `.github/workflows/auto-release.yaml` and replace `change-me-to-main` to `main`
-    ```
-    on:
-      push:
-        branches:
-          - change-me-to-main
-    ```
+![Latest Version](https://img.shields.io/badge/Version-1.0.0-blue)
+![Foundry Version](https://img.shields.io/badge/Foundry-v13-orange)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+![System](https://img.shields.io/badge/System-RMU-blue)
+![Download Count](https://img.shields.io/github/downloads/Filroden/rmu-combat-zones/rmu-combat-zones.zip)
+![Download Count](https://img.shields.io/github/downloads/Filroden/rmu-combat-zones/latest/rmu-combat-zones.zip)
+![Last Commit](https://img.shields.io/github/last-commit/Filroden/rmu-combat-zones)
+![Issues](https://img.shields.io/github/issues/Filroden/rmu-combat-zones)
+
+**RMU Combat Zones** is a lightweight visualisation module for the *Rolemaster Unified* (RMU) system. It automatically renders combat facings (Front, Flank, Rear) and weapon reach arcs directly on the canvas, helping GMs and players make tactical decisions at a glance.
+
+## Features
+
+* **Dynamic Combat Zones:** Automatically draws the Front (Green), Flanks (Yellow), and Rear (Red) zones based on the character's facing and size.
+* **Weapon Reach Rings:** Visualizes the threat range of all equipped melee weapons and shields.
+* **Live Updates:** Zones update instantly when:
+  * Tokens rotate or move.
+  * Weapons are equipped or unequipped.
+  * Items are modified in the character sheet.
+
+## How to Use
+
+### Toggling Visibility
+
+The module adds a toggle button to the **Token Controls** layer (the "person" icon on the left sidebar).
+
+1. Select the **Token Controls** layer.
+2. Click the **"Toggle Combat Zones"** tool (the circle-dot icon `◉`).
+3. This instantly shows or hides zones for **all** tokens on the canvas.
+
+### For Players
+
+* **Visibility:** You will only see combat zones for tokens you can actually see (respects Fog of War and Walls).
+* **Tactical Aid:** See exactly where your "Front" arc ends to position yourself for optimal defence, and see the melee reach of your allies and visible enemies.
+* **Facing Indicator:** A green chevron arrow indicates your exact center-front facing.
+
+### For GMs
+
+* **Full Overview:** You see zones for all visible tokens.
+* **Debug Reach:** Quickly identify if a monster's reach is incorrectly set in their sheet by looking at the rings.
+
+## Installation
+
+1. In Foundry VTT, go to the **Add-on Modules** tab.
+2. Click **Install Module**.
+3. Search for "RMU Combat Zones" or paste the manifest URL:
+   `https://github.com/Filroden/rmu-combat-zones/releases/latest/download/module.json`
+
+## Compatibility
+
+* **Foundry VTT:** Version 13+ is required.
+* **System:** Designed for *Rolemaster Unified* (RMU).
+
+## License
+
+This module is licensed under the [MIT License](LICENSE).

@@ -1,40 +1,35 @@
 /**
  * RMU Combat Zones
- * A module to visualize combat facings and weapon reach in Foundry V13.
+ * A module to visualise combat facings and weapon reach.
  */
 
 const MODULE_ID = "rmu-combat-zones";
 const SETTING_TOGGLE = "showZones";
 
-// --- Initialization ---
+// --- Initialisation ---
 
 Hooks.once("init", () => {
     game.settings.register(MODULE_ID, SETTING_TOGGLE, {
-        name: "Show Combat Zones",
-        hint: "Toggle the visualization of RMU combat zones and reach arcs.",
+        name: "RMU-ZONES.SettingName",
+        hint: "RMU-ZONES.SettingHint",
         scope: "client",
-        config: true,         // Still visible in menu, but managed via HUD now
+        config: false,
         type: Boolean,
         default: true,
-        onChange: () => {
-            // Force a full redraw on all tokens when toggled
-            canvas.tokens.placeables.forEach(t => RMUZoneRenderer.update(t));
-        }
+        onChange: () => canvas.tokens.placeables.forEach(t => RMUZoneRenderer.update(t))
     });
 });
 
 // --- Scene Controls (The HUD Button) ---
 
 Hooks.on("getSceneControlButtons", (controls) => {
-    // V13: Access the layer directly by key
     const tokenLayer = controls.tokens;
 
     if (tokenLayer) {
-        // Define the tool definition
         const rmuTool = {
             name: "rmu-zones",
-            title: "Toggle Combat Zones",
-            icon: "fas fa-bullseye",
+            title: "RMU-ZONES.ToggleTitle",
+            icon: "fas fa-circle-dot",
             toggle: true,
             active: game.settings.get(MODULE_ID, SETTING_TOGGLE),
             onClick: (toggled) => {
@@ -42,13 +37,9 @@ Hooks.on("getSceneControlButtons", (controls) => {
             }
         };
 
-        // V13 Compatibility Check:
-        // If 'tools' is an Array (Legacy/Shim), use push.
-        // If 'tools' is an Object (New V13 Standard), assign by key.
         if (Array.isArray(tokenLayer.tools)) {
             tokenLayer.tools.push(rmuTool);
         } else {
-            // Assign to the object dictionary
             tokenLayer.tools["rmu-zones"] = rmuTool;
         }
     }
@@ -67,6 +58,7 @@ class RMUZoneRenderer {
 
         // 2. Check Conditions
         const show = game.settings.get(MODULE_ID, SETTING_TOGGLE);
+        // Safety: Must have actor and be visible
         if (!show || !token.actor || !token.visible) return;
 
         // 3. Gather Data
@@ -76,10 +68,10 @@ class RMUZoneRenderer {
         // 4. Create Container
         const container = new PIXI.Container();
 
-        // Scale & Positioning (Token Parent)
+        // Scale & Positioning
         container.position.set(token.w / 2, token.h / 2);
         
-        // Rotation (Sync with Mesh)
+        // Rotation
         if (token.mesh) {
             container.rotation = token.mesh.rotation;
         }
@@ -87,17 +79,18 @@ class RMUZoneRenderer {
         token.addChildAt(container, 0);
         token.rmuZoneGraphics = container;
 
-        // Draw the Body Zone (Filled Wedges)
+        // Draw Body Zone
         this.drawBodyZone(container, data.bodyRadiusPx);
 
-        // Draw Front Arrow (New Feature)
+        // Draw Front Indicator
         this.drawFrontArrow(container, data.bodyRadiusPx);
 
-        // Draw Weapon Reaches (Arcs + Spokes)
-        if (token.isOwner && data.reachRadiiPx.length > 0) {
+        // Draw Weapon Reaches
+        if (data.reachRadiiPx.length > 0) {
             this.drawReachArcs(container, data.reachRadiiPx);
             
             const maxReach = Math.max(...data.reachRadiiPx);
+            // Draw spokes only if reach extends beyond the body zone (plus buffer)
             if (maxReach > data.bodyRadiusPx + 1) { 
                  this.drawSectorSpokes(container, data.bodyRadiusPx, maxReach);
             }
@@ -128,13 +121,42 @@ class RMUZoneRenderer {
                 );
                 if (!isMelee) continue;
 
-                let rawLength = sys._length || sys.length || "0";
-                if (typeof rawLength === "string") {
-                    rawLength = rawLength.replace(/[^0-9.]/g, '');
-                }
-                const weaponLenFt = parseFloat(rawLength);
+                // --- DATA PARSING ---
+                // Prefer derived _length (adjusted for size), fallback to raw length
+                const rawVal = sys._length || sys.length || "0";
+                const valStr = String(rawVal).trim();
+                
+                let weaponLenFt = 0;
 
-                if (!isNaN(weaponLenFt)) {
+                // Regex Patterns:
+                // 1. Feet & Inches:  1'6"  or  1' 6
+                const ftInPattern = /^(\d+)'(?:\s*(\d+)"?)?/;
+                // 2. Just Inches:    7"
+                const inPattern = /^(\d+)"/;
+                // 3. Just Number:    4  or  4.5 (assumed feet)
+                const numPattern = /^(\d+(?:\.\d+)?)/;
+
+                const matchFt = valStr.match(ftInPattern);
+                const matchIn = valStr.match(inPattern);
+                const matchNum = valStr.match(numPattern);
+
+                if (matchFt) {
+                    // e.g. "1'6" -> 1 ft + 6/12 ft
+                    const feet = parseFloat(matchFt[1]) || 0;
+                    const inches = parseFloat(matchFt[2]) || 0;
+                    weaponLenFt = feet + (inches / 12);
+                } 
+                else if (matchIn) {
+                    // e.g. "7"" -> 0 ft + 7/12 ft
+                    const inches = parseFloat(matchIn[1]) || 0;
+                    weaponLenFt = inches / 12;
+                } 
+                else if (matchNum) {
+                    // e.g. "4" -> 4 ft
+                    weaponLenFt = parseFloat(matchNum[1]);
+                }
+
+                if (weaponLenFt > 0) {
                     reachRadii.add(bodyZoneFt + weaponLenFt);
                 }
             }
@@ -159,56 +181,33 @@ class RMUZoneRenderer {
             graphics.endFill();
         };
 
-        // Front (Green) - 0 to PI (South Hemisphere)
-        drawWedge(0, Math.PI, 0x00FF00);
-        // Right Flank (Yellow)
-        drawWedge(Math.PI, Math.PI + Math.PI/3, 0xFFFF00);
-        // Left Flank (Yellow)
-        drawWedge(-Math.PI/3, 0, 0xFFFF00);
-        // Rear (Red)
-        drawWedge(Math.PI + Math.PI/3, Math.PI + 2*Math.PI/3, 0xFF0000);
+        drawWedge(0, Math.PI, 0x00FF00); // Front
+        drawWedge(Math.PI, Math.PI + Math.PI/3, 0xFFFF00); // Right
+        drawWedge(-Math.PI/3, 0, 0xFFFF00); // Left
+        drawWedge(Math.PI + Math.PI/3, Math.PI + 2*Math.PI/3, 0xFF0000); // Rear
     }
 
-    /**
-     * Draws a visual indicator of the exact center front
-     */
     static drawFrontArrow(g, radius) {
         const graphics = new PIXI.Graphics();
         g.addChild(graphics);
         
-        // Center Front is PI/2 (South) because our Front wedge is 0 to PI.
         const angle = Math.PI / 2;
-        
-        // Define Arrow Geometry
-        // Start slightly inside the zone, end slightly outside
-        const startDist = radius * 0.5;
         const endDist = radius * 1.0; 
-        
-        // Calculate points
-        const startX = startDist * Math.cos(angle);
-        const startY = startDist * Math.sin(angle);
         const endX = endDist * Math.cos(angle);
         const endY = endDist * Math.sin(angle);
         
-        // Draw Shaft
-        graphics.lineStyle(2, 0xFFFFFF, 0.8); // White, mostly opaque
-        graphics.moveTo(startX, startY);
-        graphics.lineTo(endX, endY);
-        
-        // Draw Arrowhead (Simple V shape) at the end
-        // We offset the angle by a small amount (+/- 15 degrees)
+        graphics.lineStyle(3, 0x00FF00, 1.0);
+
         const headSize = radius * 0.15;
         const leftWingAngle = angle - (Math.PI / 8); 
         const rightWingAngle = angle + (Math.PI / 8);
         
-        // Left wing
         graphics.moveTo(endX, endY);
         graphics.lineTo(
-            endX - (headSize * Math.cos(leftWingAngle)), // Subtract because we want to go "back"
+            endX - (headSize * Math.cos(leftWingAngle)), 
             endY - (headSize * Math.sin(leftWingAngle))
         );
         
-        // Right wing
         graphics.moveTo(endX, endY);
         graphics.lineTo(
             endX - (headSize * Math.cos(rightWingAngle)),
