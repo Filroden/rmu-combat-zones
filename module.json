@@ -1,23 +1,37 @@
 {
-  "id": "MODULE-FOUNDRY-ID",
-  "title": "Mona Lisa",
-  "description": "My greatest work",
-  "version": "0.0.0",
+  "id": "rmu-combat-zones",
+  "title": "RMU Combat Zones",
+  "description": "Visualises Combat Zones and Melee Reach for RMU tokens in Foundry V13.",
+  "version": "0.0.1",
   "compatibility": {
     "minimum": "13",
-    "verified": "13"
+    "verified": "13.351"
   },
   "authors": [
     {
       "name": "Ken Dearman"
     }
   ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "rmu",
+        "type": "system",
+        "compatibility": {
+          "minimum": "1.0.0"
+        }
+      }
+    ]
+  },
   "esmodules": [
     "main.js"
   ],
-  "styles": [
-  ],
-  "manifestPlusVersion": 1,
-  "manifest": "https://github.com/Filroden/fvtt/releases/download/MODULE-FOUNDRY-ID-latest/module.json",
-  "download": " https://github.com/Filroden/fvtt/releases/download/MODULE-FOUNDRY-ID-latest/MODULE-FOUNDRY-ID.zip"
+  "styles": [],
+  "packs": [],
+  "url": "",
+  "manifest": "",
+  "download": "",
+  "bugs": "",
+  "readme": "",
+  "license": "https://mit-license.org/"
 }
