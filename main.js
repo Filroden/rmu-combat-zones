@@ -7,6 +7,14 @@ const MODULE_ID = "rmu-combat-zones";
 const SETTING_TOGGLE = "showZones";
 
 // --- Configuration Constants ---
+
+// Fudge Factor: Minimum Body Zone in feet (2.5ft ensures padding for small tokens)
+const MIN_BODY_ZONE = 2.5; 
+
+// Metric Conversion Logic
+const FT_PER_METER = 3.33333;
+const METRIC_UNITS = ['m', 'm.', 'meter', 'meters', 'metre', 'metres'];
+
 const ZONE_COLORS = {
     FRONT: 0x00FF00,
     FLANK: 0xFFFF00,
@@ -47,7 +55,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
 
     const rmuTool = {
         name: "rmu-zones",
-        title: "RMU-ZONES.ToggleTitle",
+        title: game.i18n.localize("RMU-ZONES.ToggleTitle"),
         icon: "fas fa-circle-dot",
         toggle: true,
         active: game.settings.get(MODULE_ID, SETTING_TOGGLE),
@@ -81,20 +89,22 @@ class RMUZoneRenderer {
             return;
         }
 
-        // 2. Data Gathering
-        const bodyZoneFt = Number(token.actor.system.appearance?._combatZone) || 0;
+        // 2. Data Gathering (Body Zone)
+        const rawBodyZone = Number(token.actor.system.appearance?._combatZone) || 0;
+        // Apply minimum padding logic (Math.max to ensure at least 2.5ft)
+        const bodyZoneFt = Math.max(rawBodyZone, MIN_BODY_ZONE);
+
         if (!bodyZoneFt) {
             this.clear(token);
             return;
         }
 
-        // 3. Smart Redraw Check (Optimization)
+        // 3. Smart Redraw Check (Optimisation)
         const rotation = token.document.rotation;
-        const width = token.w;
-        const height = token.h;
+        const width = token.w;  
+        const height = token.h; 
         const weaponReaches = this.getWeaponReaches(token, bodyZoneFt);
-        
-        // If nothing changed, exit early to save performance
+
         if (!token._rmuDirty && 
             token._rmuLastState?.rotation === rotation &&
             token._rmuLastState?.width === width &&
@@ -103,7 +113,7 @@ class RMUZoneRenderer {
             return;
         }
 
-        // 4. Graphics Initialization (Reuse if exists)
+        // 4. Graphics Initialization
         let container = token.rmuZoneGraphics;
         if (!container) {
             container = new PIXI.Container();
@@ -113,15 +123,26 @@ class RMUZoneRenderer {
         
         container.removeChildren(); 
 
-        // 5. Update Transform (Sync with token)
+        // 5. Update Transform
         container.position.set(token.w / 2, token.h / 2);
         container.rotation = Math.toRadians(rotation);
 
         // 6. Draw
+        
+        // --- METRIC HANDLING START ---
+        const units = canvas.scene.grid.units?.toLowerCase().trim() || "";
+        const isMetric = METRIC_UNITS.includes(units);
+        const rawGridDist = canvas.scene.grid.distance;
+        
+        // If metric, convert the grid distance to feet (e.g. 1.5m -> 5ft)
+        // If imperial, use as is (e.g. 5ft -> 5ft)
+        const gridDistInFeet = isMetric ? (rawGridDist * FT_PER_METER) : rawGridDist;
+
         const gridData = {
-            gridDist: canvas.scene.grid.distance,
+            gridDist: gridDistInFeet, 
             gridSize: canvas.scene.grid.size
         };
+
         const bodyRadiusPx = this.ftToPx(bodyZoneFt, gridData);
         const reachRadiiPx = weaponReaches.map(ft => this.ftToPx(ft, gridData));
 
@@ -151,6 +172,7 @@ class RMUZoneRenderer {
     }
 
     static getWeaponReaches(token, bodyZoneFt) {
+        // Start with the Body Zone (Natural Reach)
         const reachRadii = new Set([bodyZoneFt]);
         const actor = token.actor;
 
@@ -181,13 +203,17 @@ class RMUZoneRenderer {
                     weaponLenFt = parseFloat(matchNum[1]);
                 }
 
-                if (weaponLenFt > 0) reachRadii.add(bodyZoneFt + weaponLenFt);
+                if (weaponLenFt > 0) {
+                    // Logic: Add (Adjusted) Body Zone to Weapon Length
+                    reachRadii.add(bodyZoneFt + weaponLenFt);
+                }
             }
         }
         return Array.from(reachRadii).sort((a,b) => a-b);
     }
 
     static ftToPx(ft, gridData) {
+        // ft / (Feet per Grid Square) * (Pixels per Grid Square)
         return (ft / gridData.gridDist) * gridData.gridSize;
     }
 
@@ -277,7 +303,7 @@ Hooks.on("refreshToken", (token) => {
 Hooks.on("updateActor", (actor) => {
     if (!actor) return;
     actor.getActiveTokens().forEach(t => {
-        t._rmuDirty = true; // Force update on next refresh
+        t._rmuDirty = true;
         RMUZoneRenderer.update(t);
     });
 });
@@ -291,7 +317,6 @@ Hooks.on("updateItem", (item) => {
     }
 });
 
-// Cleanup when token is removed from canvas
 Hooks.on("destroyToken", (token) => {
     RMUZoneRenderer.clear(token);
 });
