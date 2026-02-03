@@ -2,7 +2,7 @@
   "id": "rmu-combat-zones",
   "title": "RMU Combat Zones",
   "description": "RMU Combat Zones is a lightweight visualisation module for the Rolemaster Unified (RMU) system. It automatically renders combat facings (Front, Flank, Rear) and weapon reach arcs directly on the canvas, helping GMs and players make tactical decisions at a glance.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13.351"
@@ -32,7 +32,7 @@
   ],
   "url": "https://github.com/Filroden/rmu-combat-zones",
   "manifest": "https://github.com/Filroden/rmu-combat-zones/releases/latest/download/module.json",
-  "download": "https://github.com/Filroden/rmu-combat-zones/releases/download/v1.1.0/rmu-combat-zones.zip",
+  "download": "https://github.com/Filroden/rmu-combat-zones/releases/download/v1.2.0/rmu-combat-zones.zip",
   "bugs": "https://github.com/Filroden/rmu-combat-zones/issues",
   "readme": "https://github.com/Filroden/rmu-combat-zones/blob/main/README.md",
   "license": "https://mit-license.org/"
