@@ -11,6 +11,8 @@
 
 **RMU Combat Zones** is a lightweight visualisation module for the *Rolemaster Unified* (RMU) system. It automatically renders combat facings (Front, Flank, Rear) and weapon reach arcs directly on the canvas, helping GMs and players make tactical decisions at a glance.
 
+![RMU Combat Zones](https://github.com/Filroden/rmu-combat-zones/blob/main/assets/screenshots/RMU_combat_zones.png?raw=true)
+
 ## Features
 
 * **Dynamic Combat Zones:** Automatically draws the Front (Green), Flanks (Yellow), and Rear (Red) zones based on the character's facing and size.
