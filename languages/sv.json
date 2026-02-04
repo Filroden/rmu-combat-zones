@@ -1,3 +1,24 @@
 {
+  "RMU-ZONES.SettingToggleTitle": "Visa stridszoner",
+  "RMU-ZONES.SettingToggleHint": "Växla visualisering av stridszoner och räckviddsringar.",
+  
+  "RMU-ZONES.SettingColorFrontName": "Färg på frontzon",
+  "RMU-ZONES.SettingColorFrontHint": "Färg för den främre stridszonen (standard: Grön).",
+  
+  "RMU-ZONES.SettingColorFlankName": "Färg på flankzon",
+  "RMU-ZONES.SettingColorFlankHint": "Färg för flankzonerna (standard: Gul).",
+  
+  "RMU-ZONES.SettingColorRearName": "Färg på bakre zon",
+  "RMU-ZONES.SettingColorRearHint": "Färg för den bakre stridszonen (standard: Röd).",
+  
+  "RMU-ZONES.SettingColorSpokeName": "Färg på sektorlinjer",
+  "RMU-ZONES.SettingColorSpokeHint": "Färg för linjerna som delar upp sektorerna (standard: Mörkgrå).",
+  
+  "RMU-ZONES.SettingAlphaName": "Zonopacitet",
+  "RMU-ZONES.SettingAlphaHint": "Hur transparenta de fyllda zonerna ska vara (0.0 = osynlig, 1.0 = solid).",
+  
+  "RMU-ZONES.SettingMetricFactorName": "Multiplikator för meter-till-fot",
+  "RMU-ZONES.SettingMetricFactorHint": "Multiplicerar scenens rutnätsavstånd med detta värde för att omvandla det till fot (t.ex. 1,5m x 3,33 = 5ft).",
+
   "RMU-ZONES.ToggleTitle": "Visa/dölj stridszoner"
 }
