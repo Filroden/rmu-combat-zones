@@ -25,7 +25,7 @@
 
 ## Settings
 
-The module offers game settings to customise the look of the combat zone and weapon reach rings.
+There are game settings to customise the look of the combat zone and weapon reach rings.
 
 * **Custom Colors:** Don't like the default Green/Yellow/Red? You can change the color of the Front, Flank, Rear, and Spoke lines independently using a color picker.
 * **Opacity Control:** Adjust the transparency of the zone fills. Set it to `0.0` for lines-only, or crank it up for high-contrast visibility on dark maps.
@@ -54,7 +54,7 @@ The module adds a toggle button to the **Token Controls** layer (the "person" ic
 
 ## Important note on visibility
 
-* For combat zones to only be seen by players if they are in their visual range, the scene must have vision enabled, and the players' tokens must also have their vision enabled.
+* For combat zones to only be seen by players if they are in their visual range, the scene must have token vision enabled (light tab), and the players' tokens must also have their vision enabled (vision tab).
 
 ## Installation
 
