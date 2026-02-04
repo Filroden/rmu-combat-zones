@@ -1,3 +1,24 @@
 {
-    "RMU-ZONES.ToggleTitle": "Basculer les zones de combat"
+  "RMU-ZONES.SettingToggleTitle": "Afficher les zones de combat",
+  "RMU-ZONES.SettingToggleHint": "Active ou désactive la visualisation des facettes de combat et des cercles de portée des armes.",
+  
+  "RMU-ZONES.SettingColorFrontName": "Couleur de la zone avant",
+  "RMU-ZONES.SettingColorFrontHint": "Couleur pour la zone de combat avant (par défaut : Vert).",
+  
+  "RMU-ZONES.SettingColorFlankName": "Couleur de la zone de flanc",
+  "RMU-ZONES.SettingColorFlankHint": "Couleur pour les zones de combat de flanc (par défaut : Jaune).",
+  
+  "RMU-ZONES.SettingColorRearName": "Couleur de la zone arrière",
+  "RMU-ZONES.SettingColorRearHint": "Couleur pour la zone de combat arrière (par défaut : Rouge).",
+  
+  "RMU-ZONES.SettingColorSpokeName": "Couleur des séparations",
+  "RMU-ZONES.SettingColorSpokeHint": "Couleur des lignes divisant les secteurs (par défaut : Gris foncé).",
+  
+  "RMU-ZONES.SettingAlphaName": "Opacité des zones",
+  "RMU-ZONES.SettingAlphaHint": "Niveau de transparence des zones remplies (0.0 = invisible, 1.0 = opaque).",
+  
+  "RMU-ZONES.SettingMetricFactorName": "Multiplicateur Mètres-Pieds",
+  "RMU-ZONES.SettingMetricFactorHint": "Multiplie la distance de la grille de la scène par ce montant pour la convertir en pieds (ex. 1,5m x 3,33 = 5 pieds).",
+
+  "RMU-ZONES.ToggleTitle": "Basculer les zones de combat"
 }

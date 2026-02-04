@@ -1,3 +1,24 @@
 {
+  "RMU-ZONES.SettingToggleTitle": "Mostrar zonas de combate",
+  "RMU-ZONES.SettingToggleHint": "Alterna la visualización de los encaramientos de combate y los anillos de alcance de las armas.",
+  
+  "RMU-ZONES.SettingColorFrontName": "Color de zona frontal",
+  "RMU-ZONES.SettingColorFrontHint": "Color para la zona de combate frontal (predeterminado: Verde).",
+  
+  "RMU-ZONES.SettingColorFlankName": "Color de zona de flanco",
+  "RMU-ZONES.SettingColorFlankHint": "Color para las zonas de combate de flanco (predeterminado: Amarillo).",
+  
+  "RMU-ZONES.SettingColorRearName": "Color de zona trasera",
+  "RMU-ZONES.SettingColorRearHint": "Color para la zona de combate trasera (predeterminado: Rojo).",
+  
+  "RMU-ZONES.SettingColorSpokeName": "Color de las líneas divisorias",
+  "RMU-ZONES.SettingColorSpokeHint": "Color para las líneas que dividen los sectores (predeterminado: Gris oscuro).",
+  
+  "RMU-ZONES.SettingAlphaName": "Opacidad de zona",
+  "RMU-ZONES.SettingAlphaHint": "Qué tan transparentes deben ser las zonas rellenas (0.0 = invisible, 1.0 = sólido).",
+  
+  "RMU-ZONES.SettingMetricFactorName": "Multiplicador de metros a pies",
+  "RMU-ZONES.SettingMetricFactorHint": "Multiplica la distancia de la rejilla de la escena por esta cantidad para convertirla a pies (ej. 1.5m x 3.33 = 5 pies).",
+
   "RMU-ZONES.ToggleTitle": "Alternar zonas de combate"
 }

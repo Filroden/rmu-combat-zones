@@ -1,6 +1,6 @@
 # RMU Combat Zones
 
-![Latest Version](https://img.shields.io/badge/Version-1.2.0-blue)
+![Latest Version](https://img.shields.io/badge/Version-1.3.0-blue)
 ![Foundry Version](https://img.shields.io/badge/Foundry-v13-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![System](https://img.shields.io/badge/System-RMU-blue)
@@ -16,11 +16,20 @@
 ## Features
 
 * **Dynamic Combat Zones:** Automatically draws the Front (Green), Flanks (Yellow), and Rear (Red) zones based on the character's facing and size.
-* **Weapon Reach Rings:** Visualizes the threat range of all equipped melee weapons and shields.
+* **Weapon Reach Rings:** Visualizes the threat range of all natural weapons, equipped melee weapons and shields. If reach is affected by talents, etc that are automated by the system, then these are included.
+* **Metric & Imperial Support:** Works out of the box with standard feet. Automatically detects Metric scenes and applies a configurable conversion factor (default 3.33) to ensure reach rings match the grid correctly.
 * **Live Updates:** Zones update instantly when:
   * Tokens rotate or move.
   * Weapons are equipped or unequipped.
   * Items are modified in the character sheet.
+
+## Settings
+
+The module offers game settings to customise the look of the combat zone and weapon reach rings.
+
+* **Custom Colors:** Don't like the default Green/Yellow/Red? You can change the color of the Front, Flank, Rear, and Spoke lines independently using a color picker.
+* **Opacity Control:** Adjust the transparency of the zone fills. Set it to `0.0` for lines-only, or crank it up for high-contrast visibility on dark maps.
+* **Metres-to-Feet Multiplier:** For groups using metric grids, you can tweak the conversion math (Default: 1.5m = 5ft) to match your table's house rules.
 
 ## How to Use
 
@@ -42,6 +51,10 @@ The module adds a toggle button to the **Token Controls** layer (the "person" ic
 
 * **Full Overview:** You see zones for all visible tokens.
 * **Debug Reach:** Quickly identify if a monster's reach is incorrectly set in their sheet by looking at the rings.
+
+## Important note on visibility
+
+* For combat zones to only be seen by players if they are in their visual range, the scene must have vision enabled, and the players' tokens must also have their vision enabled.
 
 ## Installation
 

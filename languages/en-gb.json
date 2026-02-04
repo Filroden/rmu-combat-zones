@@ -1,3 +1,24 @@
-{ 
+{
+  "RMU-ZONES.SettingToggleTitle": "Show Combat Zones",
+  "RMU-ZONES.SettingToggleHint": "Toggle the visualisation of combat facings and weapon reach rings.",
+  
+  "RMU-ZONES.SettingColorFrontName": "Front Zone Colour",
+  "RMU-ZONES.SettingColorFrontHint": "Colour for the front-facing combat zone (default: Green).",
+  
+  "RMU-ZONES.SettingColorFlankName": "Flank Zone Colour",
+  "RMU-ZONES.SettingColorFlankHint": "Colour for the flank combat zones (default: Yellow).",
+  
+  "RMU-ZONES.SettingColorRearName": "Rear Zone Colour",
+  "RMU-ZONES.SettingColorRearHint": "Colour for the rear combat zone (default: Red).",
+  
+  "RMU-ZONES.SettingColorSpokeName": "Spoke Colour",
+  "RMU-ZONES.SettingColorSpokeHint": "Colour for the sector dividing lines (default: Dark Grey).",
+  
+  "RMU-ZONES.SettingAlphaName": "Zone Opacity",
+  "RMU-ZONES.SettingAlphaHint": "How transparent the filled zones should be (0.0 = invisible, 1.0 = solid).",
+  
+  "RMU-ZONES.SettingMetricFactorName": "Metres-to-Feet Multiplier",
+  "RMU-ZONES.SettingMetricFactorHint": "Multiplies the scene grid distance by this amount to convert it to feet. (e.g. 1.5m x 3.33 = 5ft).",
+
   "RMU-ZONES.ToggleTitle": "Toggle Combat Zones"
 }
