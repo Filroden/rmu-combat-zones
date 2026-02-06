@@ -20,5 +20,11 @@
   "RMU-ZONES.SettingMetricFactorName": "Meters-to-Feet Multiplier",
   "RMU-ZONES.SettingMetricFactorHint": "Multiplies the scene grid distance by this amount to convert it to feet. (e.g. 1.5m x 3.33 = 5ft).",
 
-  "RMU-ZONES.ToggleTitle": "Toggle Combat Zones"
+  "RMU-ZONES.ToggleTitle": "Toggle Combat Zones",
+
+  "RMU-ZONES.SettingReachShowAllName": "Always Show All Reach Rings",
+  "RMU-ZONES.SettingReachShowAllHint": "If enabled, reach rings are always visible for all tokens (Classic Mode). If disabled (Default), rings are only shown for tokens you own, hover over, or select (Smart Mode).",
+
+  "RMU-ZONES.SettingColorFacingName": "Facing Indicator Color",
+  "RMU-ZONES.SettingColorFacingHint": "Color for the front-facing triangle indicator."
 }

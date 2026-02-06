@@ -3,26 +3,12 @@
  * A module to visualise combat facings and weapon reach.
  */
 
-const MODULE_ID = "rmu-combat-zones";
+import { MODULE_ID, SETTINGS, registerSettings } from "./src/settings.js";
 
 // --- Internal Constants ---
 
-// Fudge Factor: Minimum Body Zone in feet
-// Hardcoded to 2.5ft to match RMU System logic for small token reach.
 const MIN_BODY_ZONE = 2.5; 
-
 const METRIC_UNITS = ['m', 'm.', 'meter', 'meters', 'metre', 'metres'];
-
-// Setting Keys
-const SETTINGS = {
-    TOGGLE: "showZones",
-    COLOR_FRONT: "colorFront",
-    COLOR_FLANK: "colorFlank",
-    COLOR_REAR: "colorRear",
-    COLOR_SPOKE: "colorSpoke",
-    ALPHA: "zoneAlpha",
-    METRIC_FACTOR: "metricFactor"
-};
 
 // --- Helper: Safe Derivation ---
 async function deriveDataSafe(token, force = false) {
@@ -47,155 +33,59 @@ async function deriveDataSafe(token, force = false) {
 // --- Initialisation ---
 
 Hooks.once("init", () => {
-    
-    // Helper to redraw all tokens when a setting changes
-    const redrawAll = () => {
-        canvas.tokens.placeables.forEach(t => {
-            t._rmuDirty = true;
-            RMUZoneRenderer.update(t);
-        });
+    // Define the callbacks that Settings needs to execute
+    const callbacks = {
+        redraw: () => {
+            canvas.tokens.placeables.forEach(t => {
+                t._rmuDirty = true;
+                RMUZoneRenderer.update(t);
+            });
+        },
+        derive: () => {
+            canvas.tokens.placeables.forEach(t => deriveDataSafe(t));
+        }
     };
 
-    // 1. Main Toggle
-    game.settings.register(MODULE_ID, SETTINGS.TOGGLE, {
-        name: "RMU-ZONES.SettingToggleTitle",
-        hint: "RMU-ZONES.SettingToggleHint",
-        scope: "client",
-        config: true,
-        type: Boolean,
-        default: false,
-        onChange: () => {
-            const active = game.settings.get(MODULE_ID, SETTINGS.TOGGLE);
-            if (active) canvas.tokens.placeables.forEach(t => deriveDataSafe(t));
-            redrawAll();
-        }
-    });
-
-    // 2. Colors (Stored as Strings, UI upgraded via Hook)
-    game.settings.register(MODULE_ID, SETTINGS.COLOR_FRONT, {
-        name: "RMU-ZONES.SettingColorFrontName",
-        hint: "RMU-ZONES.SettingColorFrontHint",
-        scope: "client",
-        config: true,
-        type: String, 
-        default: "#00FF00",
-        onChange: redrawAll
-    });
-    
-    game.settings.register(MODULE_ID, SETTINGS.COLOR_FLANK, {
-        name: "RMU-ZONES.SettingColorFlankName",
-        hint: "RMU-ZONES.SettingColorFlankHint",
-        scope: "client",
-        config: true,
-        type: String,
-        default: "#FFFF00",
-        onChange: redrawAll
-    });
-
-    game.settings.register(MODULE_ID, SETTINGS.COLOR_REAR, {
-        name: "RMU-ZONES.SettingColorRearName",
-        hint: "RMU-ZONES.SettingColorRearHint",
-        scope: "client",
-        config: true,
-        type: String,
-        default: "#FF0000",
-        onChange: redrawAll
-    });
-
-    game.settings.register(MODULE_ID, SETTINGS.COLOR_SPOKE, {
-        name: "RMU-ZONES.SettingColorSpokeName",
-        hint: "RMU-ZONES.SettingColorSpokeHint",
-        scope: "client",
-        config: true,
-        type: String,
-        default: "#333333",
-        onChange: redrawAll
-    });
-
-    // 3. Alpha (Opacity)
-    game.settings.register(MODULE_ID, SETTINGS.ALPHA, {
-        name: "RMU-ZONES.SettingAlphaName",
-        hint: "RMU-ZONES.SettingAlphaHint",
-        scope: "client",
-        config: true,
-        type: Number,
-        range: { min: 0, max: 1, step: 0.05 },
-        default: 0.15,
-        onChange: redrawAll
-    });
-
-    // 4. Metric Conversion Factor
-    game.settings.register(MODULE_ID, SETTINGS.METRIC_FACTOR, {
-        name: "RMU-ZONES.SettingMetricFactorName",
-        hint: "RMU-ZONES.SettingMetricFactorHint",
-        scope: "client",
-        config: true,
-        type: Number,
-        default: 3.33333,
-        onChange: redrawAll
-    });
-});
-
-// --- Add Color Pickers to Settings Menu ---
-Hooks.on("renderSettingsConfig", (app, html, data) => {
-    const $html = $(html);
-    
-    const colorSettings = [
-        SETTINGS.COLOR_FRONT,
-        SETTINGS.COLOR_FLANK,
-        SETTINGS.COLOR_REAR,
-        SETTINGS.COLOR_SPOKE
-    ];
-
-    colorSettings.forEach(key => {
-        const name = `${MODULE_ID}.${key}`;
-        const input = $html.find(`input[name="${name}"]`);
-        
-        if (input.length) {
-            // Create a color picker input
-            const picker = $(`<input type="color" style="margin-left: 5px; max-width: 40px; height: 26px; border: none; padding: 0;">`);
-            picker.val(input.val());
-
-            // Sync picker -> text input
-            picker.on("change", (e) => {
-                input.val(e.target.value);
-            });
-
-            // Sync text input -> picker
-            input.on("change", (e) => {
-                picker.val(e.target.value);
-            });
-
-            // Append next to the text box
-            input.after(picker);
-        }
-    });
+    // Register all settings using the imported function
+    registerSettings(callbacks);
 });
 
 // --- Event Hooks ---
 
 Hooks.on("canvasReady", () => {
-    canvas.tokens.placeables.forEach(t => deriveDataSafe(t));
+    if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
+        canvas.tokens.placeables.forEach(t => deriveDataSafe(t));
+    }
 });
 
 Hooks.on("controlToken", (token, controlled) => {
-    if (controlled) deriveDataSafe(token);
+    if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
+        if (controlled) deriveDataSafe(token);
+        RMUZoneRenderer.update(token); 
+    }
 });
 
 Hooks.on("hoverToken", (token, hovered) => {
-    if (hovered) deriveDataSafe(token);
+    if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
+        if (hovered) deriveDataSafe(token);
+        RMUZoneRenderer.update(token); 
+    }
 });
 
 Hooks.on("updateActor", (actor) => {
     if (!actor) return;
-    const tokens = actor.getActiveTokens();
-    for (const t of tokens) deriveDataSafe(t, true);
+    if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
+        const tokens = actor.getActiveTokens();
+        for (const t of tokens) deriveDataSafe(t, true);
+    }
 });
 
 Hooks.on("updateItem", (item) => {
     if(item.parent) {
-        const tokens = item.parent.getActiveTokens();
-        for (const t of tokens) deriveDataSafe(t, true);
+        if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
+            const tokens = item.parent.getActiveTokens();
+            for (const t of tokens) deriveDataSafe(t, true);
+        }
     }
 });
 
@@ -237,7 +127,6 @@ Hooks.on("getSceneControlButtons", (controls) => {
 class RMUZoneRenderer {
 
     static update(token) {
-        // Safety Checks
         if (!token.visible || !token.actor || !canvas.scene) {
             this.clear(token);
             return;
@@ -250,22 +139,31 @@ class RMUZoneRenderer {
             return;
         }
 
-        // --- READ SETTINGS ---
-        const metricFactor = game.settings.get(MODULE_ID, SETTINGS.METRIC_FACTOR);
-        
-        // Prepare config for drawing (converting Hex strings to Integers)
+        // --- SMART REACH LOGIC ---
+        const showAllReach = game.settings.get(MODULE_ID, SETTINGS.REACH_SHOW_ALL);
+        let showReach = false;
+
+        if (showAllReach) {
+            showReach = true;
+        } else {
+            if (token.hover || token.controlled) {
+                showReach = true;
+            } else if (!game.user.isGM && token.document.isOwner) {
+                showReach = true;
+            }
+        }
+
+        // Config
         const drawConfig = {
             front: parseInt(game.settings.get(MODULE_ID, SETTINGS.COLOR_FRONT).replace("#", ""), 16),
             flank: parseInt(game.settings.get(MODULE_ID, SETTINGS.COLOR_FLANK).replace("#", ""), 16),
             rear:  parseInt(game.settings.get(MODULE_ID, SETTINGS.COLOR_REAR).replace("#", ""), 16),
             spoke: parseInt(game.settings.get(MODULE_ID, SETTINGS.COLOR_SPOKE).replace("#", ""), 16),
+            facing: parseInt(game.settings.get(MODULE_ID, SETTINGS.COLOR_FACING).replace("#", ""), 16),
             alpha: game.settings.get(MODULE_ID, SETTINGS.ALPHA)
         };
 
-        // Data Gathering
         const rawBodyZone = Number(token.actor.system.appearance?._combatZone) || 0;
-        
-        // Use Internal Constant for Min Zone
         const bodyZoneFt = Math.max(rawBodyZone, MIN_BODY_ZONE);
 
         if (!bodyZoneFt) {
@@ -273,14 +171,12 @@ class RMUZoneRenderer {
             return;
         }
 
-        // Optimisation Check
         const rotation = token.document.rotation;
         const width = token.w;  
         const height = token.h; 
         const weaponReaches = this.getWeaponReaches(token, bodyZoneFt);
         
-        // Check if settings changed by comparing a simple hash of the config
-        const configHash = JSON.stringify(drawConfig);
+        const configHash = JSON.stringify(drawConfig) + `|${showReach}`;
 
         if (!token._rmuDirty && 
             token._rmuLastState?.rotation === rotation &&
@@ -291,7 +187,6 @@ class RMUZoneRenderer {
             return;
         }
 
-        // Graphics Initialization
         let container = token.rmuZoneGraphics;
         if (!container) {
             container = new PIXI.Container();
@@ -300,15 +195,13 @@ class RMUZoneRenderer {
         }
         container.removeChildren(); 
 
-        // Update Transform
         container.position.set(token.w / 2, token.h / 2);
         container.rotation = Math.toRadians(rotation);
 
-        // Grid Logic
         const units = canvas.scene.grid.units?.toLowerCase().trim() || "";
         const isMetric = METRIC_UNITS.includes(units);
         const rawGridDist = canvas.scene.grid.distance;
-        const gridDistInFeet = isMetric ? (rawGridDist * metricFactor) : rawGridDist;
+        const gridDistInFeet = isMetric ? (rawGridDist * game.settings.get(MODULE_ID, SETTINGS.METRIC_FACTOR)) : rawGridDist;
 
         const gridData = {
             gridDist: gridDistInFeet, 
@@ -316,12 +209,12 @@ class RMUZoneRenderer {
         };
 
         const bodyRadiusPx = this.ftToPx(bodyZoneFt, gridData);
-        const reachRadiiPx = weaponReaches.map(ft => this.ftToPx(ft, gridData));
-
+        
         this.drawBodyZone(container, bodyRadiusPx, drawConfig);
         this.drawFrontArrow(container, bodyRadiusPx, drawConfig);
 
-        if (reachRadiiPx.length > 0) {
+        if (showReach && weaponReaches.length > 0) {
+            const reachRadiiPx = weaponReaches.map(ft => this.ftToPx(ft, gridData));
             this.drawReachArcs(container, reachRadiiPx, drawConfig);
             
             const maxReach = Math.max(...reachRadiiPx);
@@ -376,8 +269,6 @@ class RMUZoneRenderer {
         return true;
     }
 
-    // --- Drawing Primitives ---
-
     static getZones(config) {
         return [
             { start: 0, end: Math.PI, color: config.front },
@@ -405,20 +296,36 @@ class RMUZoneRenderer {
     static drawFrontArrow(g, radius, config) {
         const graphics = new PIXI.Graphics();
         g.addChild(graphics);
-        const angle = Math.PI / 2;
-        const endDist = radius; 
-        const endX = endDist * Math.cos(angle);
-        const endY = endDist * Math.sin(angle);
         
-        graphics.lineStyle(3, config.front, 1.0);
+        // Define Triangle Geometry
+        const angle = Math.PI / 2; // Facing "Down" in PIXI coordinates (which aligns with Token Front)
         
-        const headSize = radius * 0.15;
-        const leftWing = angle - (Math.PI / 8); 
-        const rightWing = angle + (Math.PI / 8);
-        graphics.moveTo(endX, endY);
-        graphics.lineTo(endX - (headSize * Math.cos(leftWing)), endY - (headSize * Math.sin(leftWing)));
-        graphics.moveTo(endX, endY);
-        graphics.lineTo(endX - (headSize * Math.cos(rightWing)), endY - (headSize * Math.sin(rightWing)));
+        // Offset: 5px gap outside the body zone
+        const offset = 5; 
+        const startY = radius + offset;
+
+        const height = radius * 0.20; 
+        const width = height * 1.5;   
+        
+        // Calculate Vertices (relative to rotated container)
+        const tipY = startY + height;
+        const tipX = 0;
+
+        const baseLeftX = -width / 2;
+        const baseLeftY = startY;
+        const baseRightX = width / 2;
+        const baseRightY = startY;
+
+        // Draw
+        graphics.lineStyle(4, config.facing, 1.0); // Thicker line, separate colour
+        graphics.beginFill(config.facing, 0.25);   // Low opacity fill
+        
+        graphics.moveTo(baseLeftX, baseLeftY);
+        graphics.lineTo(tipX, tipY);
+        graphics.lineTo(baseRightX, baseRightY);
+        graphics.closePath(); 
+        
+        graphics.endFill();
     }
 
     static drawReachArcs(g, radii, config) {

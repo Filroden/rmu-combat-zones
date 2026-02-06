@@ -20,5 +20,11 @@
   "RMU-ZONES.SettingMetricFactorName": "Multiplicador de metros a pies",
   "RMU-ZONES.SettingMetricFactorHint": "Multiplica la distancia de la rejilla de la escena por esta cantidad para convertirla a pies (ej. 1.5m x 3.33 = 5 pies).",
 
-  "RMU-ZONES.ToggleTitle": "Alternar zonas de combate"
+  "RMU-ZONES.ToggleTitle": "Alternar zonas de combate",
+
+  "RMU-ZONES.SettingReachShowAllName": "Mostrar siempre todos los anillos de alcance",
+  "RMU-ZONES.SettingReachShowAllHint": "Si se habilita, los anillos de alcance serán siempre visibles para todos los tokens (Modo Clásico). Si se deshabilita (Predeterminado), los anillos solo se muestran para los tokens que posees, sobre los que pasas el cursor o seleccionas (Modo Inteligente).",
+
+  "RMU-ZONES.SettingColorFacingName": "Color del indicador de encaramiento",
+  "RMU-ZONES.SettingColorFacingHint": "Color para el indicador triangular de encaramiento frontal."
 }
