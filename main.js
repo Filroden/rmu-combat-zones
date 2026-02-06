@@ -333,13 +333,24 @@ class RMUZoneRenderer {
         g.addChild(graphics);
         const zones = this.getZones(config);
 
+        // We want the ring to be drawn "inside" the reach limit.
+        // Since the line width is 3px, we shift the radius inward by 1.5px (half width).
+        const width = 3;
+        const offset = width / 2;
+
         radii.forEach(radius => {
+            // Shift radius inward
+            const drawRadius = radius - offset;
+
             zones.forEach(zone => {
-                graphics.lineStyle(3, zone.color, 0.8);
-                const startX = radius * Math.cos(zone.start);
-                const startY = radius * Math.sin(zone.start);
+                graphics.lineStyle(width, zone.color, 0.8);
+                
+                // Calculate start point based on the NEW drawRadius
+                const startX = drawRadius * Math.cos(zone.start);
+                const startY = drawRadius * Math.sin(zone.start);
+                
                 graphics.moveTo(startX, startY);
-                graphics.arc(0, 0, radius, zone.start, zone.end);
+                graphics.arc(0, 0, drawRadius, zone.start, zone.end);
             });
         });
     }
