@@ -20,5 +20,11 @@
   "RMU-ZONES.SettingMetricFactorName": "Multiplicateur Mètres-Pieds",
   "RMU-ZONES.SettingMetricFactorHint": "Multiplie la distance de la grille de la scène par ce montant pour la convertir en pieds (ex. 1,5m x 3,33 = 5 pieds).",
 
-  "RMU-ZONES.ToggleTitle": "Basculer les zones de combat"
+  "RMU-ZONES.ToggleTitle": "Basculer les zones de combat",
+
+  "RMU-ZONES.SettingReachShowAllName": "Toujours afficher tous les cercles de portée",
+  "RMU-ZONES.SettingReachShowAllHint": "Si activé, les cercles de portée sont toujours visibles pour tous les pions (Mode Classique). Si désactivé (Par défaut), les cercles ne s'affichent que pour les pions que vous possédez, survolez ou sélectionnez (Mode Intelligent).",
+
+  "RMU-ZONES.SettingColorFacingName": "Couleur de l'indicateur d'orientation",
+  "RMU-ZONES.SettingColorFacingHint": "Couleur de l'indicateur triangulaire d'orientation avant."
 }

@@ -20,5 +20,11 @@
   "RMU-ZONES.SettingMetricFactorName": "Multiplikator för meter-till-fot",
   "RMU-ZONES.SettingMetricFactorHint": "Multiplicerar scenens rutnätsavstånd med detta värde för att omvandla det till fot (t.ex. 1,5m x 3,33 = 5ft).",
 
-  "RMU-ZONES.ToggleTitle": "Visa/dölj stridszoner"
+  "RMU-ZONES.ToggleTitle": "Visa/dölj stridszoner",
+
+  "RMU-ZONES.SettingReachShowAllName": "Visa alltid alla räckviddsringar",
+  "RMU-ZONES.SettingReachShowAllHint": "Om aktiverat är räckviddsringar alltid synliga för alla tokens (Klassiskt läge). Om inaktiverat (Standard) visas ringar endast för tokens du äger, hovrar över eller markerar (Smart läge).",
+
+  "RMU-ZONES.SettingColorFacingName": "Färg på riktningsindikator",
+  "RMU-ZONES.SettingColorFacingHint": "Färg för den främre triangulära indikatorn."
 }

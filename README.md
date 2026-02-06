@@ -1,6 +1,6 @@
 # RMU Combat Zones
 
-![Latest Version](https://img.shields.io/badge/Version-1.3.0-blue)
+![Latest Version](https://img.shields.io/badge/Version-1.4.0-blue)
 ![Foundry Version](https://img.shields.io/badge/Foundry-v13-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![System](https://img.shields.io/badge/System-RMU-blue)
@@ -9,7 +9,7 @@
 ![Last Commit](https://img.shields.io/github/last-commit/Filroden/rmu-combat-zones)
 ![Issues](https://img.shields.io/github/issues/Filroden/rmu-combat-zones)
 
-**RMU Combat Zones** is a lightweight visualisation module for the *Rolemaster Unified* (RMU) system. It automatically renders combat facings (Front, Flank, Rear) and weapon reach arcs directly on the canvas, helping GMs and players make tactical decisions at a glance.
+**RMU Combat Zones** is a lightweight visualisation module for the *Rolemaster Unified* (RMU) system. It automatically renders a token's combat zone, its combat facings (Front, Flank, Rear) and weapon reach arcs directly on the canvas, helping GMs and players make tactical decisions at a glance.
 
 ![RMU Combat Zones](https://github.com/Filroden/rmu-combat-zones/blob/main/assets/screenshots/RMU_combat_zones.png?raw=true)
 
@@ -27,7 +27,8 @@
 
 There are game settings to customise the look of the combat zone and weapon reach rings.
 
-* **Custom Colors:** Don't like the default Green/Yellow/Red? You can change the color of the Front, Flank, Rear, and Spoke lines independently using a color picker.
+* **Show All Reach Rings:** If enabled, all reach rings are always visible for all tokens.
+* **Custom Colors:** Don't like the default Green/Yellow/Red? You can change the color of the Front, Flank, Rear, and Spoke lines and the front-facing arrow independently using a color picker.
 * **Opacity Control:** Adjust the transparency of the zone fills. Set it to `0.0` for no fill, or crank it up for high-contrast visibility on dark maps.
 * **Metres-to-Feet Multiplier:** For groups using metric grids, you can tweak the conversion math (Default: 1.5m = 5ft) to match your table's house rules.
 
@@ -39,18 +40,8 @@ The module adds a toggle button to the **Token Controls** layer (the "person" ic
 
 1. Select the **Token Controls** layer.
 2. Click the **"Toggle Combat Zones"** tool (the circle-dot icon `◉`).
-3. This instantly shows or hides zones for **all** tokens on the canvas.
-
-### For Players
-
-* **Visibility:** You will only see combat zones for tokens you can actually see (respects Fog of War and Walls).
-* **Tactical Aid:** See exactly where your "Front" arc ends to position yourself for optimal defence, and see the melee reach of your allies and visible enemies.
-* **Facing Indicator:** A green chevron arrow indicates your exact center-front facing.
-
-### For GMs
-
-* **Full Overview:** You see zones for all visible tokens.
-* **Debug Reach:** Quickly identify if a monster's reach is incorrectly set in their sheet by looking at the rings.
+3. This instantly shows or hides combat zones for **all** tokens on the canvas.
+4. **Select** or **hover** over any token to see its weapon reach rings. (Note: Your own character's reach is always visible).
 
 ## Important note on visibility
 
