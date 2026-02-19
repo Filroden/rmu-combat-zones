@@ -7,11 +7,16 @@ import { MODULE_ID, SETTINGS, registerSettings } from "./src/settings.js";
 
 // --- Internal Constants ---
 
+const VALID_ACTOR_TYPES = ["Character", "Creature"];
+
 const MIN_BODY_ZONE = 2.5;
 const METRIC_UNITS = ["m", "m.", "meter", "meters", "metre", "metres"];
 
 // --- Helper: Safe Derivation ---
 async function deriveDataSafe(token, force = false) {
+    // Abort if there is no actor or the actor type is not valid
+    if (!token.actor || !VALID_ACTOR_TYPES.includes(token.actor.type)) return;
+
     if (force) token._rmuDerived = false;
     if (typeof token.document.hudDeriveExtendedData !== "function") return;
     if (token._rmuDeriving) return;
@@ -133,7 +138,12 @@ Hooks.on("getSceneControlButtons", (controls) => {
 
 class RMUZoneRenderer {
     static update(token) {
-        if (!token.visible || !token.actor || !canvas.scene) {
+        if (
+            !token.visible ||
+            !token.actor ||
+            !canvas.scene ||
+            !VALID_ACTOR_TYPES.includes(token.actor.type)
+        ) {
             this.clear(token);
             return;
         }
