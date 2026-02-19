@@ -2,6 +2,7 @@
 
 | Version | Changes |
 | :--- | :--- |
+| **Version 1.4.2** | **BUG FIXES**<br>- Fixed to prevent Combat Zones trying to be shown for actor types other than characters or creatures.|
 | **Version 1.4.1** | **BUG FIXES**<br>- Fixed slow rotation of the combat zones if the token's rotation was locked.|
 | **Version 1.4.0** | **IMPROVEMENTS**<br>- Changed default visibility behaviour. When the module is toggled on, all tokens show their combat zones and a front-facing arrow. For players, your own token also always shows your equipped weapon reach. Hovering over or selecting any other token will reveal their weapon reach. For GMs, only combat zones are shown for all tokens and the same select or hover will reveal the reach.<br>- Added a game setting to show all weapon reach on all tokens.<br>- Improved the visibility and style of the front-facing arrow and added a game setting to select its colour separately from the front-facing combat zone.<br><br>**BUG FIXES**<br>- Draw weapon reach ring borders inside the reach range.|
 | **Version 1.3.0** | **IMPROVEMENTS**<br>- Weapon reach now includes automated talents, etc supported by the RMU system.<br>- Colours, opacity and the metres-to-feet conversion factor for grid size are all customisable in the game settings.<br>- RMU Combat Zones now starts toggled off. To see the combat zones, use the scene control on the token bar, or change it in the game settings.|
