@@ -1,5 +1,6 @@
 /**
- * RMU Combat Zones - Settings Configuration
+ * src/settings.js
+ * Configuration and UI settings.
  */
 
 export const MODULE_ID = "rmu-combat-zones";
@@ -13,7 +14,7 @@ export const SETTINGS = {
     COLOR_SPOKE: "colorSpoke",
     COLOR_FACING: "colorFacing",
     ALPHA: "zoneAlpha",
-    METRIC_FACTOR: "metricFactor"
+    METRIC_FACTOR: "metricFactor",
 };
 
 /**
@@ -37,7 +38,7 @@ export function registerSettings(callbacks) {
             const active = game.settings.get(MODULE_ID, SETTINGS.TOGGLE);
             if (active) derive(); // Trigger derivation if turned ON
             redraw();
-        }
+        },
     });
 
     // 2. Reach "Show All" Toggle
@@ -48,27 +49,53 @@ export function registerSettings(callbacks) {
         config: true,
         type: Boolean,
         default: false,
-        onChange: redraw
+        onChange: redraw,
     });
 
     // 3. Colours
     const colorSettings = [
-        { key: SETTINGS.COLOR_FRONT, name: "RMU-ZONES.SettingColorFrontName", hint: "RMU-ZONES.SettingColorFrontHint", default: "#00FF00" },
-        { key: SETTINGS.COLOR_FACING, name: "RMU-ZONES.SettingColorFacingName", hint: "RMU-ZONES.SettingColorFacingHint", default: "#00FF00" },
-        { key: SETTINGS.COLOR_FLANK, name: "RMU-ZONES.SettingColorFlankName", hint: "RMU-ZONES.SettingColorFlankHint", default: "#FFFF00" },
-        { key: SETTINGS.COLOR_REAR, name: "RMU-ZONES.SettingColorRearName", hint: "RMU-ZONES.SettingColorRearHint", default: "#FF0000" },
-        { key: SETTINGS.COLOR_SPOKE, name: "RMU-ZONES.SettingColorSpokeName", hint: "RMU-ZONES.SettingColorSpokeHint", default: "#333333" }
+        {
+            key: SETTINGS.COLOR_FRONT,
+            name: "RMU-ZONES.SettingColorFrontName",
+            hint: "RMU-ZONES.SettingColorFrontHint",
+            default: "#00FF00",
+        },
+        {
+            key: SETTINGS.COLOR_FACING,
+            name: "RMU-ZONES.SettingColorFacingName",
+            hint: "RMU-ZONES.SettingColorFacingHint",
+            default: "#00FF00",
+        },
+        {
+            key: SETTINGS.COLOR_FLANK,
+            name: "RMU-ZONES.SettingColorFlankName",
+            hint: "RMU-ZONES.SettingColorFlankHint",
+            default: "#FFFF00",
+        },
+        {
+            key: SETTINGS.COLOR_REAR,
+            name: "RMU-ZONES.SettingColorRearName",
+            hint: "RMU-ZONES.SettingColorRearHint",
+            default: "#FF0000",
+        },
+        {
+            key: SETTINGS.COLOR_SPOKE,
+            name: "RMU-ZONES.SettingColorSpokeName",
+            hint: "RMU-ZONES.SettingColorSpokeHint",
+            default: "#333333",
+        },
     ];
 
-    colorSettings.forEach(setting => {
+    const { ColorField } = foundry.data.fields;
+
+    colorSettings.forEach((setting) => {
         game.settings.register(MODULE_ID, setting.key, {
             name: setting.name,
             hint: setting.hint,
             scope: "client",
             config: true,
-            type: String,
-            default: setting.default,
-            onChange: redraw
+            type: new ColorField({ required: true, initial: setting.default }),
+            onChange: redraw,
         });
     });
 
@@ -81,7 +108,7 @@ export function registerSettings(callbacks) {
         type: Number,
         range: { min: 0, max: 1, step: 0.05 },
         default: 0.15,
-        onChange: redraw
+        onChange: redraw,
     });
 
     // 5. Metric Factor
@@ -92,31 +119,6 @@ export function registerSettings(callbacks) {
         config: true,
         type: Number,
         default: 3.33333,
-        onChange: redraw
+        onChange: redraw,
     });
 }
-
-// --- UI Magic: Add Color Pickers ---
-Hooks.on("renderSettingsConfig", (app, html, data) => {
-    const $html = $(html); 
-    const colorKeys = [
-        SETTINGS.COLOR_FRONT, 
-        SETTINGS.COLOR_FACING,
-        SETTINGS.COLOR_FLANK, 
-        SETTINGS.COLOR_REAR, 
-        SETTINGS.COLOR_SPOKE
-    ];
-
-    colorKeys.forEach(key => {
-        const name = `${MODULE_ID}.${key}`;
-        const input = $html.find(`input[name="${name}"]`);
-        
-        if (input.length) {
-            const picker = $(`<input type="color" style="margin-left: 5px; max-width: 40px; height: 26px; border: none; padding: 0;">`);
-            picker.val(input.val());
-            picker.on("change", (e) => input.val(e.target.value));
-            input.on("change", (e) => picker.val(e.target.value));
-            input.after(picker);
-        }
-    });
-});
