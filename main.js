@@ -67,18 +67,33 @@ Hooks.on("updateToken", (tokenDoc, changes) => {
     }
 });
 
-// Consolidated abstraction for item lifecycle events
-const triggerItemUpdate = (item) => {
-    if (!item.parent) return;
+// Consolidated abstraction for document lifecycle events
+const triggerDataDerivation = (document) => {
+    let actor = document.parent;
+
+    // Traverse up the document tree if an ActiveEffect is nested inside an Item
+    if (actor && !(actor instanceof Actor)) {
+        actor = actor.parent;
+    }
+
+    if (!actor || !(actor instanceof Actor)) return;
+
     if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
-        const tokens = item.parent.getActiveTokens();
+        const tokens = actor.getActiveTokens();
+        // Forcing derivation resolves asynchronous race conditions during data preparation
         for (const t of tokens) deriveDataSafe(t, true);
     }
 };
 
-Hooks.on("updateItem", triggerItemUpdate);
-Hooks.on("createItem", triggerItemUpdate);
-Hooks.on("deleteItem", triggerItemUpdate);
+// Item Hooks
+Hooks.on("updateItem", triggerDataDerivation);
+Hooks.on("createItem", triggerDataDerivation);
+Hooks.on("deleteItem", triggerDataDerivation);
+
+// Active Effect Hooks (Status Effects)
+Hooks.on("createActiveEffect", triggerDataDerivation);
+Hooks.on("updateActiveEffect", triggerDataDerivation);
+Hooks.on("deleteActiveEffect", triggerDataDerivation);
 
 Hooks.on("refreshToken", (token) => {
     // Standard update for passive rings

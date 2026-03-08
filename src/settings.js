@@ -15,6 +15,7 @@ export const SETTINGS = {
     COLOR_FACING: "colorFacing",
     ALPHA: "zoneAlpha",
     METRIC_FACTOR: "metricFactor",
+    SHOW_LABELS: "showLabels",
 };
 
 /**
@@ -120,5 +121,16 @@ export function registerSettings(callbacks) {
         type: Number,
         default: 3.33333,
         onChange: redraw,
+    });
+
+    // 6. Show Reach Labels
+    game.settings.register(MODULE_ID, SETTINGS.SHOW_LABELS, {
+        name: "RMU-ZONES.SettingShowLabelsName",
+        hint: "RMU-ZONES.SettingShowLabelsHint",
+        scope: "client",
+        config: true,
+        type: Boolean,
+        default: true,
+        onChange: callbacks.redraw,
     });
 }

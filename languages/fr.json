@@ -26,5 +26,8 @@
     "RMU-ZONES.SettingReachShowAllHint": "Si activé, les cercles de portée sont toujours visibles pour tous les pions (Mode Classique). Si désactivé (Par défaut), les cercles ne s'affichent que pour les pions que vous possédez, survolez ou sélectionnez (Mode Intelligent).",
 
     "RMU-ZONES.SettingColorFacingName": "Couleur de l'indicateur d'orientation",
-    "RMU-ZONES.SettingColorFacingHint": "Couleur de l'indicateur triangulaire d'orientation avant."
+    "RMU-ZONES.SettingColorFacingHint": "Couleur de l'indicateur triangulaire d'orientation avant.",
+
+    "RMU-ZONES.SettingShowLabelsName": "Afficher les étiquettes de portée",
+    "RMU-ZONES.SettingShowLabelsHint": "Si activé, les noms des armes s'afficheront horizontalement sur leurs anneaux de portée correspondants."
 }

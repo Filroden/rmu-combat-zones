@@ -26,5 +26,8 @@
     "RMU-ZONES.SettingReachShowAllHint": "Om aktiverat är räckviddsringar alltid synliga för alla tokens (Klassiskt läge). Om inaktiverat (Standard) visas ringar endast för tokens du äger, hovrar över eller markerar (Smart läge).",
 
     "RMU-ZONES.SettingColorFacingName": "Färg på riktningsindikator",
-    "RMU-ZONES.SettingColorFacingHint": "Färg för den främre triangulära indikatorn."
+    "RMU-ZONES.SettingColorFacingHint": "Färg för den främre triangulära indikatorn.",
+
+    "RMU-ZONES.SettingShowLabelsName": "Visa räckviddsetiketter",
+    "RMU-ZONES.SettingShowLabelsHint": "Om aktiverat kommer vapennamn att visas horisontellt på sina motsvarande räckviddsringar."
 }

@@ -104,7 +104,25 @@ export class RMUZoneRenderer {
         // Retrieve weapon data objects { reach, name }
         const weaponData = this.getWeaponReaches(dataSource, bodyZoneFt);
         const reachValues = weaponData.map((w) => w.reach);
-        const configHash = JSON.stringify(drawConfig) + `|${showReach}`;
+
+        const showLabels = game.settings.get(MODULE_ID, SETTINGS.SHOW_LABELS);
+
+        // --- Dynamic Label Placement ---
+        let labelPlacement = "top";
+        if (
+            RMUZoneRenderer.hoveredToken &&
+            canvas.tokens.controlled.includes(token)
+        ) {
+            const dy = RMUZoneRenderer.hoveredToken.center.y - token.center.y;
+            // If the target is ABOVE the token on the canvas, push labels to the BOTTOM
+            if (dy < 0) {
+                labelPlacement = "bottom";
+            }
+        }
+
+        const configHash =
+            JSON.stringify(drawConfig) +
+            `|${showReach}|${showLabels}|${labelPlacement}`;
 
         if (
             !token._rmuDirty &&
@@ -128,10 +146,16 @@ export class RMUZoneRenderer {
         } else {
             graphics = container.zoneGraphics;
             graphics.clear();
+
+            // Clear any old text labels before redrawing
+            for (let i = container.children.length - 1; i >= 0; i--) {
+                if (container.children[i] instanceof PIXI.Text) {
+                    container.children[i].destroy();
+                }
+            }
         }
 
         container.alpha = 1.0;
-
         container.position.set(token.w / 2, token.h / 2);
         container.rotation = Math.toRadians(rotation);
 
@@ -145,6 +169,17 @@ export class RMUZoneRenderer {
                 this.ftToPx(ft, gridData),
             );
             this.drawReachArcs(graphics, reachRadiiPx, drawConfig);
+
+            // --- Draw horizontal labels on the rings ---
+            if (showLabels) {
+                this.drawRingLabels(
+                    container,
+                    weaponData,
+                    gridData,
+                    labelPlacement,
+                    rotation,
+                );
+            }
 
             const maxReachPx = Math.max(...reachRadiiPx);
             if (maxReachPx > bodyRadiusPx + 1) {
@@ -268,6 +303,64 @@ export class RMUZoneRenderer {
         graphics.endFill();
     }
 
+    /**
+     * Draws horizontal text labels directly onto the reach rings.
+     */
+    static drawRingLabels(
+        container,
+        weapons,
+        gridData,
+        placement,
+        rotationDeg,
+    ) {
+        const textStyle = new PIXI.TextStyle({
+            fontFamily: "Arial",
+            fontSize: 14,
+            fill: "#FFFFFF",
+            stroke: "#000000",
+            strokeThickness: 3,
+        });
+
+        const rotationRad = Math.toRadians(rotationDeg);
+
+        // Screen-space angles (Top of screen is -PI/2. Bottom is PI/2)
+        const screenAngle = placement === "top" ? -Math.PI / 2 : Math.PI / 2;
+
+        // Subtract container rotation to anchor visually at top/bottom of the ring
+        const localAngle = screenAngle - rotationRad;
+
+        weapons.forEach((weapon) => {
+            if (!weapon.name || weapon.name === "Combat Zone") return;
+
+            const radiusPx = this.ftToPx(weapon.reach, gridData);
+            const offset = 3 / 2;
+            const displayRadiusPx = radiusPx - offset;
+
+            // Add 8px (approx 0.5rem) directly to the radius to push text outward
+            const paddingPx = 8;
+            const labelRadiusPx = displayRadiusPx + paddingPx;
+
+            const label = new PIXI.Text(weapon.name, textStyle);
+
+            // Calculate coordinates using the padded radius
+            label.x = Math.cos(localAngle) * labelRadiusPx;
+            label.y = Math.sin(localAngle) * labelRadiusPx;
+
+            // Counter-rotate text so it is always horizontally level
+            label.rotation = -rotationRad;
+
+            // Anchor left (0) to start the text exactly at the 12/6 o'clock position
+            // Anchor Bottom (1) for Top placement, Top (0) for Bottom placement.
+            if (placement === "top") {
+                label.anchor.set(0, 1);
+            } else {
+                label.anchor.set(0, 0);
+            }
+
+            container.addChild(label);
+        });
+    }
+
     static drawReachArcs(graphics, radiiPx, config) {
         const zones = this.getZones(config);
         const width = 3;
@@ -321,7 +414,15 @@ export class RMUZoneRenderer {
      * Renders the dynamic Antenna and Chevron system UNDER the tokens.
      */
     static drawThreatRulerOverlay(targetToken, isHovered) {
+        const previousTarget = this.hoveredToken;
         this.hoveredToken = isHovered ? targetToken : null;
+
+        const controlled = canvas.tokens.controlled;
+
+        // --- Force update on controlled tokens so labels can flip dynamically ---
+        if (previousTarget !== this.hoveredToken) {
+            controlled.forEach((t) => this.update(t));
+        }
 
         // Clear BOTH overlays if they exist
         if (canvas.primary.rmuThreatRuler) {
@@ -332,8 +433,6 @@ export class RMUZoneRenderer {
             canvas.controls.rmuThreatRuler.destroy({ children: true });
             canvas.controls.rmuThreatRuler = null;
         }
-
-        const controlled = canvas.tokens.controlled;
 
         if (
             !isHovered ||
@@ -469,8 +568,8 @@ export class RMUZoneRenderer {
             bgOverlay.moveTo(attacker.center.x, attacker.center.y);
             bgOverlay.lineTo(attEndX, attEndY);
 
-            // --- 3. Weapon Chevrons and Labels (Drawn on Foreground) ---
-            weapons.forEach((weapon, index) => {
+            // --- 3. Weapon Chevrons ONLY (Drawn on Foreground) ---
+            weapons.forEach((weapon) => {
                 const weaponReachPx = this.ftToPx(weapon.reach, gridData);
 
                 const isHit = weaponReachPx + targetZonePx >= distance3DPx;
@@ -493,29 +592,6 @@ export class RMUZoneRenderer {
                     cx - Math.cos(angle + Math.PI / 4) * size,
                     cy - Math.sin(angle + Math.PI / 4) * size,
                 );
-
-                if (weapon.name) {
-                    const label = new PIXI.Text(weapon.name, textStyle);
-
-                    const direction = index % 2 === 0 ? -1 : 1;
-                    const distance = 20 + Math.floor(index / 2) * 18;
-                    const staggeredOffset = direction * distance;
-
-                    label.x =
-                        cx + Math.cos(angle - Math.PI / 2) * staggeredOffset;
-                    label.y =
-                        cy + Math.sin(angle - Math.PI / 2) * staggeredOffset;
-                    label.anchor.set(0.5);
-
-                    let textRot = angle;
-                    if (textRot > Math.PI / 2 || textRot < -Math.PI / 2) {
-                        textRot += Math.PI;
-                    }
-                    label.rotation = textRot;
-
-                    // Add text to fgOverlay
-                    fgOverlay.addChild(label);
-                }
             });
         });
     }

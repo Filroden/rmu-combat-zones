@@ -26,5 +26,8 @@
     "RMU-ZONES.SettingReachShowAllHint": "Si se activa, los anillos de alcance son siempre visibles para todos los tokens (Modo Clásico). Si se desactiva (Por defecto), los anillos solo se muestran para los tokens que posees, seleccionas o sobre los que pasas el ratón (Modo Inteligente).",
 
     "RMU-ZONES.SettingColorFacingName": "Color del indicador de encaramiento",
-    "RMU-ZONES.SettingColorFacingHint": "Color para el indicador triangular de encaramiento frontal."
+    "RMU-ZONES.SettingColorFacingHint": "Color para el indicador triangular de encaramiento frontal.",
+
+    "RMU-ZONES.SettingShowLabelsName": "Mostrar etiquetas de alcance",
+    "RMU-ZONES.SettingShowLabelsHint": "Si está activado, los nombres de las armas se mostrarán horizontalmente en sus correspondientes anillos de alcance."
 }
