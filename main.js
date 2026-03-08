@@ -37,6 +37,8 @@ Hooks.on("controlToken", (token, controlled) => {
     if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
         if (controlled) deriveDataSafe(token);
         RMUZoneRenderer.update(token);
+        // Clear the overlay if selection changes to avoid sticky lines
+        RMUZoneRenderer.drawThreatRulerOverlay(null, false);
     }
 });
 
@@ -44,6 +46,9 @@ Hooks.on("hoverToken", (token, hovered) => {
     if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
         if (hovered) deriveDataSafe(token);
         RMUZoneRenderer.update(token);
+
+        // Pass the hovered token to the overlay manager
+        RMUZoneRenderer.drawThreatRulerOverlay(token, hovered);
     }
 });
 
@@ -76,7 +81,22 @@ Hooks.on("createItem", triggerItemUpdate);
 Hooks.on("deleteItem", triggerItemUpdate);
 
 Hooks.on("refreshToken", (token) => {
+    // Standard update for passive rings
     RMUZoneRenderer.update(token);
+
+    // Dynamic real-time update for the Threat Ruler
+    if (RMUZoneRenderer.hoveredToken) {
+        // Only recalculate if the token moving/elevating is the attacker or the defender
+        const isTarget = token === RMUZoneRenderer.hoveredToken;
+        const isAttacker = canvas.tokens.controlled.includes(token);
+
+        if (isTarget || isAttacker) {
+            RMUZoneRenderer.drawThreatRulerOverlay(
+                RMUZoneRenderer.hoveredToken,
+                true,
+            );
+        }
+    }
 });
 
 Hooks.on("destroyToken", (token) => {
