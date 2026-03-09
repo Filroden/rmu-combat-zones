@@ -26,5 +26,11 @@
     "RMU-ZONES.SettingReachShowAllHint": "If enabled, reach rings are always visible for all tokens (Classic Mode). If disabled (Default), rings are only shown for tokens you own, hover over, or select (Smart Mode).",
 
     "RMU-ZONES.SettingColorFacingName": "Facing Indicator Color",
-    "RMU-ZONES.SettingColorFacingHint": "Color for the front-facing triangle indicator."
+    "RMU-ZONES.SettingColorFacingHint": "Color for the front-facing triangle indicator.",
+
+    "RMU-ZONES.SettingShowLabelsName": "Show Reach Labels",
+    "RMU-ZONES.SettingShowLabelsHint": "If enabled, weapon names will be displayed horizontally on their corresponding reach rings.",
+
+    "RMU-ZONES.SettingShowThreatRulerName": "Enable 3D Threat Ruler",
+    "RMU-ZONES.SettingShowThreatRulerHint": "If enabled, hovering over a target while controlling a token will draw a dynamic line showing true 3D reach and hit/miss chevrons."
 }

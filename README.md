@@ -1,6 +1,6 @@
 # RMU Combat Zones
 
-![Latest Version](https://img.shields.io/badge/Version-1.5.0-blue)
+![Latest Version](https://img.shields.io/badge/Version-1.6.0-blue)
 ![Foundry Version](https://img.shields.io/badge/Foundry-v13-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![System](https://img.shields.io/badge/System-RMU-blue)
@@ -15,22 +15,25 @@
 
 ## Features
 
-* **Dynamic Combat Zones:** Automatically draws the Front (Green), Flanks (Yellow), and Rear (Red) zones based on the character's facing and size.
-* **Weapon Reach Rings:** Visualizes the threat range of all natural weapons, equipped melee weapons and shields. If reach is affected by talents, etc that are automated by the system, then these are included.
-* **Metric & Imperial Support:** Works out of the box with standard feet. Automatically detects Metric scenes and applies a configurable conversion factor (default 3.33) to ensure reach rings match the grid correctly.
-* **Live Updates:** Zones update instantly when:
-  * Tokens rotate or move.
-  * Weapons are equipped or unequipped.
-  * Items are modified in the character sheet.
+- **Dynamic Combat Zones:** Automatically draws the Front (Green), Flanks (Yellow), and Rear (Red) zones based on the character's facing and size.
+- **Weapon Reach Rings:** Visualizes the threat range of all natural weapons, equipped melee weapons and shields. If reach is affected by talents, etc that are automated by the system, then these are included.
+- **3D Threat Ruler (Elevation Support):** Accurately visualises true 3D distance when tokens are at different elevations. Select your token(s) and hover over a target to generate a dynamic, bi-directional line that automatically calculates whether your weapons can physically reach the target's combat zone.
+- **Metric & Imperial Support:** Works out of the box with standard feet. Automatically detects Metric scenes and applies a configurable conversion factor (default 3.33) to ensure reach rings match the grid correctly.
+- **Live Updates:** Zones update instantly when:
+  - Tokens rotate or move.
+  - Weapons are equipped or unequipped.
+  - Items are modified in the character sheet.
 
 ## Settings
 
 There are game settings to customise the look of the combat zone and weapon reach rings.
 
-* **Show All Reach Rings:** If enabled, all reach rings are always visible for all tokens.
-* **Custom Colors:** Don't like the default Green/Yellow/Red? You can change the color of the Front, Flank, Rear, and Spoke lines and the front-facing arrow independently using a color picker.
-* **Opacity Control:** Adjust the transparency of the zone fills. Set it to `0.0` for no fill, or crank it up for high-contrast visibility on dark maps.
-* **Metres-to-Feet Multiplier:** For groups using metric grids, you can tweak the conversion math (Default: 1.5m = 5ft) to match your table's house rules.
+- **Show All Reach Rings:** If enabled, all reach rings are always visible for all tokens.
+- **Custom Colors:** Don't like the default Green/Yellow/Red? You can change the color of the Front, Flank, Rear, and Spoke lines and the front-facing arrow independently using a color picker.
+- **Opacity Control:** Adjust the transparency of the zone fills. Set it to `0.0` for no fill, or crank it up for high-contrast visibility on dark maps.
+- **Metres-to-Feet Multiplier:** For groups using metric grids, you can tweak the conversion math (Default: 1.5m = 5ft) to match your table's house rules.
+- **Show Reach Labels:** If enabled, weapon names will be displayed horizontally on their corresponding reach rings.
+- **Enable 3D Threat Ruler:** If enabled, hovering over a target while controlling a token will draw a dynamic line showing true 3D reach and hit/miss chevrons.**
 
 ## How to Use
 
@@ -43,9 +46,20 @@ The module adds a toggle button to the **Token Controls** layer (the "person" ic
 3. This instantly shows or hides combat zones for **all** tokens on the canvas.
 4. **Select** or **hover** over any token to see its weapon reach rings. (Note: Your own character's reach is always visible).
 
+### Using the 3D Threat Ruler
+
+The 3D Threat Ruler must be enabled in the Game Settings.
+
+To quickly check distances and elevation modifiers during combat:
+
+1. Select one or more of your controlled tokens.
+2. Hover your mouse cursor over an enemy token.
+3. A threat line will render underneath the token art, bridging the gap between the combatants.
+4. Equipped weapons will display as chevrons along the line. If a weapon's reach successfully intersects the target's combat zone in 3D space, the chevron will illuminate in your relative facing colour.
+
 ## Important note on visibility
 
-* For combat zones to only be seen by players if they are in their visual range, the scene must have token vision enabled (light tab), and the players' tokens must also have their vision enabled (vision tab).
+- For combat zones to only be seen by players if they are in their visual range, the scene must have token vision enabled (light tab), and the players' tokens must also have their vision enabled (vision tab).
 
 ## Installation
 
@@ -56,8 +70,8 @@ The module adds a toggle button to the **Token Controls** layer (the "person" ic
 
 ## Compatibility
 
-* **Foundry VTT:** Version 13+ is required.
-* **System:** Designed for *Rolemaster Unified* (RMU).
+- **Foundry VTT:** Version 13+ is required.
+- **System:** Designed for *Rolemaster Unified* (RMU).
 
 ## License
 

@@ -15,6 +15,8 @@ export const SETTINGS = {
     COLOR_FACING: "colorFacing",
     ALPHA: "zoneAlpha",
     METRIC_FACTOR: "metricFactor",
+    SHOW_LABELS: "showLabels",
+    SHOW_THREAT_RULER: "showThreatRuler",
 };
 
 /**
@@ -119,6 +121,28 @@ export function registerSettings(callbacks) {
         config: true,
         type: Number,
         default: 3.33333,
+        onChange: redraw,
+    });
+
+    // 6. Show Reach Labels
+    game.settings.register(MODULE_ID, SETTINGS.SHOW_LABELS, {
+        name: "RMU-ZONES.SettingShowLabelsName",
+        hint: "RMU-ZONES.SettingShowLabelsHint",
+        scope: "client",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: callbacks.redraw,
+    });
+
+    // 7. Show Threat Ruler
+    game.settings.register(MODULE_ID, SETTINGS.SHOW_THREAT_RULER, {
+        name: "RMU-ZONES.SettingShowThreatRulerName",
+        hint: "RMU-ZONES.SettingShowThreatRulerHint",
+        scope: "client",
+        config: true,
+        type: Boolean,
+        default: false,
         onChange: redraw,
     });
 }

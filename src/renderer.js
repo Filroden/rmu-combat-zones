@@ -10,12 +10,7 @@ const VALID_ACTOR_TYPES = ["Character", "Creature"];
 const MIN_BODY_ZONE = 2.5;
 const METRIC_UNITS = ["m", "m.", "meter", "meters", "metre", "metres"];
 
-/**
- * Safely requests the system to calculate the latest token data.
- * Includes safeguards against asynchronous race conditions if a token is deleted.
- */
 export async function deriveDataSafe(token, force = false) {
-    // Abort if there is no actor or the actor type is not valid
     if (!token.actor || !VALID_ACTOR_TYPES.includes(token.actor.type)) return;
 
     if (force) token._rmuDerived = false;
@@ -26,8 +21,6 @@ export async function deriveDataSafe(token, force = false) {
     token._rmuDeriving = true;
     try {
         await token.document.hudDeriveExtendedData();
-
-        // Prevent modification or rendering if the token was deleted while awaiting derivation
         if (token.destroyed || !token.document) return;
 
         token._rmuDerived = true;
@@ -40,10 +33,9 @@ export async function deriveDataSafe(token, force = false) {
     }
 }
 
-/**
- * Manages the drawing and clearing of combat zones on the canvas.
- */
 export class RMUZoneRenderer {
+    static hoveredToken = null;
+
     static update(token) {
         if (
             !token.visible ||
@@ -57,36 +49,23 @@ export class RMUZoneRenderer {
 
         if (!game.settings.settings.has(`${MODULE_ID}.${SETTINGS.TOGGLE}`))
             return;
-        const show = game.settings.get(MODULE_ID, SETTINGS.TOGGLE);
-        if (!show) {
+        if (!game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
             this.clear(token);
             return;
         }
 
-        // --- Edge Case: Unlinked Drag Clones ---
-        // Preview clones of unlinked tokens lack derived synthetic actor data.
-        // Route all data requests to the original token.
         const dataSource =
             token.isPreview && token._original ? token._original : token;
-
-        // --- Smart Reach Logic ---
         const showAllReach = game.settings.get(
             MODULE_ID,
             SETTINGS.REACH_SHOW_ALL,
         );
-        let showReach = false;
+        let showReach =
+            showAllReach ||
+            dataSource.hover ||
+            dataSource.controlled ||
+            (!game.user.isGM && dataSource.document.isOwner);
 
-        if (showAllReach) {
-            showReach = true;
-        } else {
-            if (dataSource.hover || dataSource.controlled) {
-                showReach = true;
-            } else if (!game.user.isGM && dataSource.document.isOwner) {
-                showReach = true;
-            }
-        }
-
-        // Retrieve colour configurations
         const drawConfig = {
             front: game.settings.get(MODULE_ID, SETTINGS.COLOR_FRONT),
             flank: game.settings.get(MODULE_ID, SETTINGS.COLOR_FLANK),
@@ -96,7 +75,6 @@ export class RMUZoneRenderer {
             alpha: game.settings.get(MODULE_ID, SETTINGS.ALPHA),
         };
 
-        // Pull the combat zone from the dataSource
         const rawBodyZone =
             Number(dataSource.actor.system.appearance?._combatZone) || 0;
         const bodyZoneFt = Math.max(rawBodyZone, MIN_BODY_ZONE);
@@ -106,25 +84,55 @@ export class RMUZoneRenderer {
             return;
         }
 
-        const rotation = token.document.rotation;
-        const width = token.w;
-        const height = token.h;
-        const weaponReaches = this.getWeaponReaches(dataSource, bodyZoneFt);
+        const units = canvas.scene.grid.units?.toLowerCase().trim() || "";
+        const isMetric = METRIC_UNITS.includes(units);
+        const metricFactor = game.settings.get(
+            MODULE_ID,
+            SETTINGS.METRIC_FACTOR,
+        );
+        const rawGridDist = canvas.scene.grid.distance;
+        const gridDistInFeet = isMetric
+            ? rawGridDist * metricFactor
+            : rawGridDist;
+        const gridData = {
+            gridDist: gridDistInFeet,
+            gridSize: canvas.scene.grid.size,
+        };
 
-        const configHash = JSON.stringify(drawConfig) + `|${showReach}`;
+        const rotation = token.document.rotation;
+
+        // Retrieve weapon data objects { reach, name }
+        const weaponData = this.getWeaponReaches(dataSource, bodyZoneFt);
+        const reachValues = weaponData.map((w) => w.reach);
+
+        const showLabels = game.settings.get(MODULE_ID, SETTINGS.SHOW_LABELS);
+
+        // --- Dynamic Label Placement ---
+        let labelPlacement = "top";
+        if (
+            RMUZoneRenderer.hoveredToken &&
+            canvas.tokens.controlled.includes(token)
+        ) {
+            const dy = RMUZoneRenderer.hoveredToken.center.y - token.center.y;
+            // If the target is ABOVE the token on the canvas, push labels to the BOTTOM
+            if (dy < 0) {
+                labelPlacement = "bottom";
+            }
+        }
+
+        const configHash =
+            JSON.stringify(drawConfig) +
+            `|${showReach}|${showLabels}|${labelPlacement}`;
 
         if (
             !token._rmuDirty &&
             token._rmuLastState?.rotation === rotation &&
-            token._rmuLastState?.width === width &&
-            token._rmuLastState?.height === height &&
             token._rmuLastState?.configHash === configHash &&
-            this.arraysEqual(token._rmuLastState?.reaches, weaponReaches)
+            this.arraysEqual(token._rmuLastState?.reaches, reachValues)
         ) {
             return;
         }
 
-        // Single PIXI.Graphics initialisation for performance
         let container = token.rmuZoneGraphics;
         let graphics;
 
@@ -132,47 +140,53 @@ export class RMUZoneRenderer {
             container = new PIXI.Container();
             token.addChildAt(container, 0);
             token.rmuZoneGraphics = container;
-
             graphics = new PIXI.Graphics();
             container.addChild(graphics);
             container.zoneGraphics = graphics;
         } else {
             graphics = container.zoneGraphics;
             graphics.clear();
+
+            // Clear any old text labels before redrawing
+            for (let i = container.children.length - 1; i >= 0; i--) {
+                if (container.children[i] instanceof PIXI.Text) {
+                    container.children[i].destroy();
+                }
+            }
         }
 
+        container.alpha = 1.0;
         container.position.set(token.w / 2, token.h / 2);
         container.rotation = Math.toRadians(rotation);
-
-        const units = canvas.scene.grid.units?.toLowerCase().trim() || "";
-        const isMetric = METRIC_UNITS.includes(units);
-        const rawGridDist = canvas.scene.grid.distance;
-        const gridDistInFeet = isMetric
-            ? rawGridDist * game.settings.get(MODULE_ID, SETTINGS.METRIC_FACTOR)
-            : rawGridDist;
-
-        const gridData = {
-            gridDist: gridDistInFeet,
-            gridSize: canvas.scene.grid.size,
-        };
 
         const bodyRadiusPx = this.ftToPx(bodyZoneFt, gridData);
 
         this.drawBodyZone(graphics, bodyRadiusPx, drawConfig);
         this.drawFrontArrow(graphics, bodyRadiusPx, drawConfig);
 
-        if (showReach && weaponReaches.length > 0) {
-            const reachRadiiPx = weaponReaches.map((ft) =>
+        if (showReach && reachValues.length > 0) {
+            const reachRadiiPx = reachValues.map((ft) =>
                 this.ftToPx(ft, gridData),
             );
             this.drawReachArcs(graphics, reachRadiiPx, drawConfig);
 
-            const maxReach = Math.max(...reachRadiiPx);
-            if (maxReach > bodyRadiusPx + 1) {
+            // --- Draw horizontal labels on the rings ---
+            if (showLabels) {
+                this.drawRingLabels(
+                    container,
+                    weaponData,
+                    gridData,
+                    labelPlacement,
+                    rotation,
+                );
+            }
+
+            const maxReachPx = Math.max(...reachRadiiPx);
+            if (maxReachPx > bodyRadiusPx + 1) {
                 this.drawSectorSpokes(
                     graphics,
                     bodyRadiusPx,
-                    maxReach,
+                    maxReachPx,
                     drawConfig,
                 );
             }
@@ -180,9 +194,9 @@ export class RMUZoneRenderer {
 
         token._rmuLastState = {
             rotation,
-            width,
-            height,
-            reaches: weaponReaches,
+            width: token.w,
+            height: token.h,
+            reaches: reachValues,
             configHash,
         };
         token._rmuDirty = false;
@@ -196,24 +210,43 @@ export class RMUZoneRenderer {
         }
     }
 
+    /**
+     * Extracts weapon reaches and names for labelling.
+     */
     static getWeaponReaches(token, bodyZoneFt) {
-        const reachRadii = new Set([bodyZoneFt]);
+        const reachMap = new Map();
+        reachMap.set(bodyZoneFt, "Combat Zone");
+
         const attacks = token.actor.system._attacks;
 
-        if (!Array.isArray(attacks) || attacks.length === 0) {
-            return Array.from(reachRadii);
-        }
+        if (Array.isArray(attacks) && attacks.length > 0) {
+            for (const att of attacks) {
+                if (att.isEquipped === false) continue;
+                if (att.isRanged === true) continue;
 
-        for (const att of attacks) {
-            if (att.isEquipped === false) continue;
-            if (att.isRanged === true) continue;
+                const range = att.meleeRange;
+                if (typeof range === "number" && range > 0) {
+                    const actualReach = Math.max(range, bodyZoneFt);
+                    const currentName = reachMap.get(actualReach);
+                    const weaponName = att.attackName || "Weapon";
 
-            const range = att.meleeRange;
-            if (typeof range === "number" && range > 0) {
-                reachRadii.add(Math.max(range, bodyZoneFt));
+                    if (currentName && currentName !== "Combat Zone") {
+                        if (!currentName.includes(weaponName)) {
+                            reachMap.set(
+                                actualReach,
+                                `${currentName}, ${weaponName}`,
+                            );
+                        }
+                    } else {
+                        reachMap.set(actualReach, weaponName);
+                    }
+                }
             }
         }
-        return Array.from(reachRadii).sort((a, b) => a - b);
+
+        return Array.from(reachMap.entries())
+            .map(([reach, name]) => ({ reach, name }))
+            .sort((a, b) => a.reach - b.reach);
     }
 
     static ftToPx(ft, gridData) {
@@ -245,7 +278,6 @@ export class RMUZoneRenderer {
 
     static drawBodyZone(graphics, radius, config) {
         const zones = this.getZones(config);
-
         zones.forEach((zone) => {
             graphics.lineStyle(0);
             graphics.beginFill(zone.color, config.alpha);
@@ -262,47 +294,92 @@ export class RMUZoneRenderer {
         const height = radius * 0.2;
         const width = height * 1.5;
 
-        const tipY = startY + height;
-        const tipX = 0;
-        const baseLeftX = -width / 2;
-        const baseLeftY = startY;
-        const baseRightX = width / 2;
-        const baseRightY = startY;
-
         graphics.lineStyle(4, config.facing, 1.0);
         graphics.beginFill(config.facing, 0.25);
-
-        graphics.moveTo(baseLeftX, baseLeftY);
-        graphics.lineTo(tipX, tipY);
-        graphics.lineTo(baseRightX, baseRightY);
+        graphics.moveTo(-width / 2, startY);
+        graphics.lineTo(0, startY + height);
+        graphics.lineTo(width / 2, startY);
         graphics.closePath();
-
         graphics.endFill();
     }
 
-    static drawReachArcs(graphics, radii, config) {
+    /**
+     * Draws horizontal text labels directly onto the reach rings.
+     */
+    static drawRingLabels(
+        container,
+        weapons,
+        gridData,
+        placement,
+        rotationDeg,
+    ) {
+        const textStyle = new PIXI.TextStyle({
+            fontFamily: "Arial",
+            fontSize: 14,
+            fill: "#FFFFFF",
+            stroke: "#000000",
+            strokeThickness: 3,
+        });
+
+        const rotationRad = Math.toRadians(rotationDeg);
+
+        // Screen-space angles (Top of screen is -PI/2. Bottom is PI/2)
+        const screenAngle = placement === "top" ? -Math.PI / 2 : Math.PI / 2;
+
+        // Subtract container rotation to anchor visually at top/bottom of the ring
+        const localAngle = screenAngle - rotationRad;
+
+        weapons.forEach((weapon) => {
+            if (!weapon.name || weapon.name === "Combat Zone") return;
+
+            const radiusPx = this.ftToPx(weapon.reach, gridData);
+            const offset = 3 / 2;
+            const displayRadiusPx = radiusPx - offset;
+
+            // Add padding directly to the radius to push text outward
+            const paddingPx = 4;
+            const labelRadiusPx = displayRadiusPx + paddingPx;
+
+            const label = new PIXI.Text(weapon.name, textStyle);
+
+            // Calculate coordinates using the padded radius
+            label.x = Math.cos(localAngle) * labelRadiusPx;
+            label.y = Math.sin(localAngle) * labelRadiusPx;
+
+            // Counter-rotate text so it is always horizontally level
+            label.rotation = -rotationRad;
+
+            // Anchor left (0) to start the text exactly at the 12/6 o'clock position
+            // Anchor Bottom (1) for Top placement, Top (0) for Bottom placement.
+            if (placement === "top") {
+                label.anchor.set(0, 1);
+            } else {
+                label.anchor.set(0, 0);
+            }
+
+            container.addChild(label);
+        });
+    }
+
+    static drawReachArcs(graphics, radiiPx, config) {
         const zones = this.getZones(config);
         const width = 3;
         const offset = width / 2;
 
-        radii.forEach((radius) => {
-            const drawRadius = radius - offset;
-
+        radiiPx.forEach((radiusPx) => {
+            const drawRadiusPx = radiusPx - offset;
             zones.forEach((zone) => {
                 graphics.lineStyle(width, zone.color, 0.8);
-
-                const startX = drawRadius * Math.cos(zone.start);
-                const startY = drawRadius * Math.sin(zone.start);
-
+                const startX = drawRadiusPx * Math.cos(zone.start);
+                const startY = drawRadiusPx * Math.sin(zone.start);
                 graphics.moveTo(startX, startY);
-                graphics.arc(0, 0, drawRadius, zone.start, zone.end);
+                graphics.arc(0, 0, drawRadiusPx, zone.start, zone.end);
             });
         });
     }
 
     static drawSectorSpokes(graphics, innerRadius, outerRadius, config) {
         graphics.lineStyle(2, config.spoke, 0.5);
-
         const boundaries = [0, Math.PI, -Math.PI / 3, Math.PI + Math.PI / 3];
         boundaries.forEach((angle) => {
             graphics.moveTo(
@@ -313,6 +390,214 @@ export class RMUZoneRenderer {
                 outerRadius * Math.cos(angle),
                 outerRadius * Math.sin(angle),
             );
+        });
+    }
+
+    static getZoneColorForAngle(sourceToken, targetToken, drawConfig) {
+        const dx = targetToken.center.x - sourceToken.center.x;
+        const dy = targetToken.center.y - sourceToken.center.y;
+        let relativeAngle =
+            Math.atan2(dy, dx) - Math.toRadians(sourceToken.document.rotation);
+
+        while (relativeAngle > Math.PI) relativeAngle -= 2 * Math.PI;
+        while (relativeAngle < -Math.PI) relativeAngle += 2 * Math.PI;
+
+        const zones = this.getZones(drawConfig);
+        for (const zone of zones) {
+            if (relativeAngle >= zone.start && relativeAngle <= zone.end)
+                return zone.color;
+        }
+        return drawConfig.front;
+    }
+
+    /**
+     * Renders the dynamic Antenna and Chevron system UNDER the tokens.
+     */
+    static drawThreatRulerOverlay(targetToken, isHovered) {
+        const previousTarget = this.hoveredToken;
+        this.hoveredToken = isHovered ? targetToken : null;
+
+        const controlled = canvas.tokens.controlled;
+
+        // --- Force update on controlled tokens so labels can flip dynamically ---
+        if (previousTarget !== this.hoveredToken) {
+            controlled.forEach((t) => this.update(t));
+        }
+
+        // Clear BOTH overlays if they exist
+        if (canvas.primary.rmuThreatRuler) {
+            canvas.primary.rmuThreatRuler.destroy({ children: true });
+            canvas.primary.rmuThreatRuler = null;
+        }
+        if (canvas.controls.rmuThreatRuler) {
+            canvas.controls.rmuThreatRuler.destroy({ children: true });
+            canvas.controls.rmuThreatRuler = null;
+        }
+
+        // --- Escape clause for the client setting ---
+        if (!game.settings.get(MODULE_ID, SETTINGS.SHOW_THREAT_RULER)) {
+            return;
+        }
+
+        if (
+            !isHovered ||
+            !targetToken ||
+            controlled.length === 0 ||
+            controlled.includes(targetToken)
+        ) {
+            return;
+        }
+
+        // --- LAYER 1: Background (Lines under tokens) ---
+        const bgOverlay = new PIXI.Graphics();
+        bgOverlay.zIndex = -1;
+        canvas.primary.addChild(bgOverlay);
+        canvas.primary.rmuThreatRuler = bgOverlay;
+
+        // --- LAYER 2: Foreground (Data over tokens) ---
+        const fgOverlay = new PIXI.Graphics();
+        fgOverlay.zIndex = 1000;
+        canvas.controls.addChild(fgOverlay);
+        canvas.controls.rmuThreatRuler = fgOverlay;
+
+        const drawConfig = {
+            front: game.settings.get(MODULE_ID, SETTINGS.COLOR_FRONT),
+            flank: game.settings.get(MODULE_ID, SETTINGS.COLOR_FLANK),
+            rear: game.settings.get(MODULE_ID, SETTINGS.COLOR_REAR),
+            spoke: game.settings.get(MODULE_ID, SETTINGS.COLOR_SPOKE),
+        };
+
+        const missColorHex =
+            typeof drawConfig.spoke === "string"
+                ? parseInt(drawConfig.spoke.replace("#", "0x"))
+                : 0x333333;
+
+        const units = canvas.scene.grid.units?.toLowerCase().trim() || "";
+        const isMetric = METRIC_UNITS.includes(units);
+        const metricFactor = game.settings.get(
+            MODULE_ID,
+            SETTINGS.METRIC_FACTOR,
+        );
+        const gridData = {
+            gridDist: isMetric
+                ? canvas.scene.grid.distance * metricFactor
+                : canvas.scene.grid.distance,
+            gridSize: canvas.scene.grid.size,
+        };
+
+        const getElevationFt = (t) => {
+            const e = t.document.elevation || 0;
+            return isMetric ? e * metricFactor : e;
+        };
+
+        const targetZ = getElevationFt(targetToken);
+        const targetZoneFt = Math.max(
+            Number(targetToken.actor?.system.appearance?._combatZone) || 0,
+            MIN_BODY_ZONE,
+        );
+        const targetZonePx = this.ftToPx(targetZoneFt, gridData);
+
+        const textStyle = new PIXI.TextStyle({
+            fontFamily: "Arial",
+            fontSize: 14,
+            fill: "#FFFFFF",
+            stroke: "#000000",
+            strokeThickness: 3,
+        });
+
+        controlled.forEach((attacker) => {
+            const bodyZoneFt = Math.max(
+                Number(attacker.actor?.system.appearance?._combatZone) || 0,
+                MIN_BODY_ZONE,
+            );
+            const weapons = this.getWeaponReaches(attacker, bodyZoneFt);
+
+            const dx = targetToken.center.x - attacker.center.x;
+            const dy = targetToken.center.y - attacker.center.y;
+            const distance2DPx = Math.sqrt(dx * dx + dy * dy);
+
+            const attackerZ = getElevationFt(attacker);
+            const dzPx = this.ftToPx(Math.abs(attackerZ - targetZ), gridData);
+            const distance3DPx = Math.sqrt(
+                distance2DPx * distance2DPx + dzPx * dzPx,
+            );
+
+            if (distance3DPx === 0) return;
+
+            const projectionRatio = distance2DPx / distance3DPx;
+            const angle = Math.atan2(dy, dx);
+
+            const hitColorString = this.getZoneColorForAngle(
+                attacker,
+                targetToken,
+                drawConfig,
+            );
+            const hitColorHex =
+                typeof hitColorString === "string"
+                    ? parseInt(hitColorString.replace("#", "0x"))
+                    : 0x00ff00;
+
+            // --- 1. Defender's Antenna (Drawn on Background) ---
+            const defAntennaLengthPx = targetZonePx * projectionRatio;
+            const defEndX =
+                targetToken.center.x - Math.cos(angle) * defAntennaLengthPx;
+            const defEndY =
+                targetToken.center.y - Math.sin(angle) * defAntennaLengthPx;
+
+            bgOverlay.lineStyle(3, missColorHex, 0.8);
+            bgOverlay.moveTo(targetToken.center.x, targetToken.center.y);
+            bgOverlay.lineTo(defEndX, defEndY);
+
+            const shieldSize = 14;
+            bgOverlay.lineStyle(4, missColorHex, 1.0);
+            bgOverlay.moveTo(
+                defEndX + Math.cos(angle + Math.PI / 2) * shieldSize,
+                defEndY + Math.sin(angle + Math.PI / 2) * shieldSize,
+            );
+            bgOverlay.lineTo(
+                defEndX + Math.cos(angle - Math.PI / 2) * shieldSize,
+                defEndY + Math.sin(angle - Math.PI / 2) * shieldSize,
+            );
+
+            // --- 2. Attacker's Antenna (Drawn on Background) ---
+            const maxWeaponReachFt = Math.max(...weapons.map((w) => w.reach));
+            const maxReachPx = this.ftToPx(maxWeaponReachFt, gridData);
+            const attAntennaLengthPx = maxReachPx * projectionRatio;
+
+            const attEndX =
+                attacker.center.x + Math.cos(angle) * attAntennaLengthPx;
+            const attEndY =
+                attacker.center.y + Math.sin(angle) * attAntennaLengthPx;
+
+            bgOverlay.lineStyle(3, missColorHex, 0.8);
+            bgOverlay.moveTo(attacker.center.x, attacker.center.y);
+            bgOverlay.lineTo(attEndX, attEndY);
+
+            // --- 3. Weapon Chevrons ONLY (Drawn on Foreground) ---
+            weapons.forEach((weapon) => {
+                const weaponReachPx = this.ftToPx(weapon.reach, gridData);
+
+                const isHit = weaponReachPx + targetZonePx >= distance3DPx;
+                const color = isHit ? hitColorHex : missColorHex;
+                const thickness = isHit ? 6 : 4;
+                const size = 12;
+
+                const chevronDistPx = weaponReachPx * projectionRatio;
+                const cx = attacker.center.x + Math.cos(angle) * chevronDistPx;
+                const cy = attacker.center.y + Math.sin(angle) * chevronDistPx;
+
+                // Draw chevron to fgOverlay
+                fgOverlay.lineStyle(thickness, color, 1.0);
+                fgOverlay.moveTo(
+                    cx - Math.cos(angle - Math.PI / 4) * size,
+                    cy - Math.sin(angle - Math.PI / 4) * size,
+                );
+                fgOverlay.lineTo(cx, cy);
+                fgOverlay.lineTo(
+                    cx - Math.cos(angle + Math.PI / 4) * size,
+                    cy - Math.sin(angle + Math.PI / 4) * size,
+                );
+            });
         });
     }
 }

@@ -37,6 +37,8 @@ Hooks.on("controlToken", (token, controlled) => {
     if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
         if (controlled) deriveDataSafe(token);
         RMUZoneRenderer.update(token);
+        // Clear the overlay if selection changes to avoid sticky lines
+        RMUZoneRenderer.drawThreatRulerOverlay(null, false);
     }
 });
 
@@ -44,6 +46,9 @@ Hooks.on("hoverToken", (token, hovered) => {
     if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
         if (hovered) deriveDataSafe(token);
         RMUZoneRenderer.update(token);
+
+        // Pass the hovered token to the overlay manager
+        RMUZoneRenderer.drawThreatRulerOverlay(token, hovered);
     }
 });
 
@@ -62,21 +67,51 @@ Hooks.on("updateToken", (tokenDoc, changes) => {
     }
 });
 
-// Consolidated abstraction for item lifecycle events
-const triggerItemUpdate = (item) => {
-    if (!item.parent) return;
+// Consolidated abstraction for document lifecycle events
+const triggerDataDerivation = (document) => {
+    let actor = document.parent;
+
+    // Traverse up the document tree if an ActiveEffect is nested inside an Item
+    if (actor && !(actor instanceof Actor)) {
+        actor = actor.parent;
+    }
+
+    if (!actor || !(actor instanceof Actor)) return;
+
     if (game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
-        const tokens = item.parent.getActiveTokens();
+        const tokens = actor.getActiveTokens();
+        // Forcing derivation resolves asynchronous race conditions during data preparation
         for (const t of tokens) deriveDataSafe(t, true);
     }
 };
 
-Hooks.on("updateItem", triggerItemUpdate);
-Hooks.on("createItem", triggerItemUpdate);
-Hooks.on("deleteItem", triggerItemUpdate);
+// Item Hooks
+Hooks.on("updateItem", triggerDataDerivation);
+Hooks.on("createItem", triggerDataDerivation);
+Hooks.on("deleteItem", triggerDataDerivation);
+
+// Active Effect Hooks (Status Effects)
+Hooks.on("createActiveEffect", triggerDataDerivation);
+Hooks.on("updateActiveEffect", triggerDataDerivation);
+Hooks.on("deleteActiveEffect", triggerDataDerivation);
 
 Hooks.on("refreshToken", (token) => {
+    // Standard update for passive rings
     RMUZoneRenderer.update(token);
+
+    // Dynamic real-time update for the Threat Ruler
+    if (RMUZoneRenderer.hoveredToken) {
+        // Only recalculate if the token moving/elevating is the attacker or the defender
+        const isTarget = token === RMUZoneRenderer.hoveredToken;
+        const isAttacker = canvas.tokens.controlled.includes(token);
+
+        if (isTarget || isAttacker) {
+            RMUZoneRenderer.drawThreatRulerOverlay(
+                RMUZoneRenderer.hoveredToken,
+                true,
+            );
+        }
+    }
 });
 
 Hooks.on("destroyToken", (token) => {

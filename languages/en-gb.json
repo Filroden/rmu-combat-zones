@@ -1,30 +1,33 @@
 {
-  "RMU-ZONES.SettingToggleTitle": "Show Combat Zones",
-  "RMU-ZONES.SettingToggleHint": "Toggle the visualisation of combat facings and weapon reach rings.",
-  
-  "RMU-ZONES.SettingColorFrontName": "Front Zone Colour",
-  "RMU-ZONES.SettingColorFrontHint": "Colour for the front-facing combat zone (default: Green).",
-  
-  "RMU-ZONES.SettingColorFlankName": "Flank Zone Colour",
-  "RMU-ZONES.SettingColorFlankHint": "Colour for the flank combat zones (default: Yellow).",
-  
-  "RMU-ZONES.SettingColorRearName": "Rear Zone Colour",
-  "RMU-ZONES.SettingColorRearHint": "Colour for the rear combat zone (default: Red).",
-  
-  "RMU-ZONES.SettingColorSpokeName": "Spoke Colour",
-  "RMU-ZONES.SettingColorSpokeHint": "Colour for the sector dividing lines (default: Dark Grey).",
-  
-  "RMU-ZONES.SettingAlphaName": "Zone Opacity",
-  "RMU-ZONES.SettingAlphaHint": "How transparent the filled zones should be (0.0 = invisible, 1.0 = solid).",
-  
-  "RMU-ZONES.SettingMetricFactorName": "Metres-to-Feet Multiplier",
-  "RMU-ZONES.SettingMetricFactorHint": "Multiplies the scene grid distance by this amount to convert it to feet. (e.g. 1.5m x 3.33 = 5ft).",
+    "RMU-ZONES.SettingToggleTitle": "Show Combat Zones",
+    "RMU-ZONES.SettingToggleHint": "Toggle the visualisation of combat facings and weapon reach rings.",
 
-  "RMU-ZONES.ToggleTitle": "Toggle Combat Zones",
+    "RMU-ZONES.SettingColorFrontName": "Front Zone Colour",
+    "RMU-ZONES.SettingColorFrontHint": "Colour for the front-facing combat zone (default: Green).",
 
-  "RMU-ZONES.SettingReachShowAllName": "Always Show All Reach Rings",
-  "RMU-ZONES.SettingReachShowAllHint": "If enabled, reach rings are always visible for all tokens (Classic Mode). If disabled (Default), rings are only shown for tokens you own, hover over, or select (Smart Mode).",
+    "RMU-ZONES.SettingColorFlankName": "Flank Zone Colour",
+    "RMU-ZONES.SettingColorFlankHint": "Colour for the flank combat zones (default: Yellow).",
 
-  "RMU-ZONES.SettingColorFacingName": "Facing Indicator Colour",
-  "RMU-ZONES.SettingColorFacingHint": "Colour for the front-facing triangle indicator."
+    "RMU-ZONES.SettingColorRearName": "Rear Zone Colour",
+    "RMU-ZONES.SettingColorRearHint": "Colour for the rear combat zone (default: Red).",
+
+    "RMU-ZONES.SettingColorSpokeName": "Spoke Colour",
+    "RMU-ZONES.SettingColorSpokeHint": "Colour for the sector dividing lines (default: Dark Grey).",
+
+    "RMU-ZONES.SettingAlphaName": "Zone Opacity",
+    "RMU-ZONES.SettingAlphaHint": "How transparent the filled zones should be (0.0 = invisible, 1.0 = solid).",
+
+    "RMU-ZONES.SettingMetricFactorName": "Metres-to-Feet Multiplier",
+    "RMU-ZONES.SettingMetricFactorHint": "Multiplies the scene grid distance by this amount to convert it to feet. (e.g. 1.5m x 3.33 = 5ft).",
+
+    "RMU-ZONES.ToggleTitle": "Toggle Combat Zones",
+
+    "RMU-ZONES.SettingReachShowAllName": "Always Show All Reach Rings",
+    "RMU-ZONES.SettingReachShowAllHint": "If enabled, reach rings are always visible for all tokens (Classic Mode). If disabled (Default), rings are only shown for tokens you own, hover over, or select (Smart Mode).",
+
+    "RMU-ZONES.SettingColorFacingName": "Facing Indicator Colour",
+    "RMU-ZONES.SettingColorFacingHint": "Colour for the front-facing triangle indicator.",
+
+    "RMU-ZONES.SettingShowLabelsName": "Show Reach Labels",
+    "RMU-ZONES.SettingShowLabelsHint": "If enabled, weapon names will be displayed horizontally on their corresponding reach rings."
 }
