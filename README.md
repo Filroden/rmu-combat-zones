@@ -32,6 +32,8 @@ There are game settings to customise the look of the combat zone and weapon reac
 - **Custom Colors:** Don't like the default Green/Yellow/Red? You can change the color of the Front, Flank, Rear, and Spoke lines and the front-facing arrow independently using a color picker.
 - **Opacity Control:** Adjust the transparency of the zone fills. Set it to `0.0` for no fill, or crank it up for high-contrast visibility on dark maps.
 - **Metres-to-Feet Multiplier:** For groups using metric grids, you can tweak the conversion math (Default: 1.5m = 5ft) to match your table's house rules.
+- **Show Reach Labels:** If enabled, weapon names will be displayed horizontally on their corresponding reach rings.
+- **Enable 3D Threat Ruler:** If enabled, hovering over a target while controlling a token will draw a dynamic line showing true 3D reach and hit/miss chevrons.**
 
 ## How to Use
 
@@ -45,6 +47,8 @@ The module adds a toggle button to the **Token Controls** layer (the "person" ic
 4. **Select** or **hover** over any token to see its weapon reach rings. (Note: Your own character's reach is always visible).
 
 ### Using the 3D Threat Ruler
+
+The 3D Threat Ruler must be enabled in the Game Settings.
 
 To quickly check distances and elevation modifiers during combat:
 

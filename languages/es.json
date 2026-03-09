@@ -29,5 +29,8 @@
     "RMU-ZONES.SettingColorFacingHint": "Color para el indicador triangular de encaramiento frontal.",
 
     "RMU-ZONES.SettingShowLabelsName": "Mostrar etiquetas de alcance",
-    "RMU-ZONES.SettingShowLabelsHint": "Si está activado, los nombres de las armas se mostrarán horizontalmente en sus correspondientes anillos de alcance."
+    "RMU-ZONES.SettingShowLabelsHint": "Si está activado, los nombres de las armas se mostrarán horizontalmente en sus correspondientes anillos de alcance.",
+
+    "RMU-ZONES.SettingShowThreatRulerName": "Habilitar regla de amenaza 3D",
+    "RMU-ZONES.SettingShowThreatRulerHint": "Si se habilita, al pasar el cursor sobre un objetivo mientras se controla un token se dibujará una línea dinámica mostrando el alcance 3D real y los cheurones de acierto/fallo."
 }

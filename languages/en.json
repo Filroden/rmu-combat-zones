@@ -29,5 +29,8 @@
     "RMU-ZONES.SettingColorFacingHint": "Color for the front-facing triangle indicator.",
 
     "RMU-ZONES.SettingShowLabelsName": "Show Reach Labels",
-    "RMU-ZONES.SettingShowLabelsHint": "If enabled, weapon names will be displayed horizontally on their corresponding reach rings."
+    "RMU-ZONES.SettingShowLabelsHint": "If enabled, weapon names will be displayed horizontally on their corresponding reach rings.",
+
+    "RMU-ZONES.SettingShowThreatRulerName": "Enable 3D Threat Ruler",
+    "RMU-ZONES.SettingShowThreatRulerHint": "If enabled, hovering over a target while controlling a token will draw a dynamic line showing true 3D reach and hit/miss chevrons."
 }

@@ -336,8 +336,8 @@ export class RMUZoneRenderer {
             const offset = 3 / 2;
             const displayRadiusPx = radiusPx - offset;
 
-            // Add 8px (approx 0.5rem) directly to the radius to push text outward
-            const paddingPx = 8;
+            // Add padding directly to the radius to push text outward
+            const paddingPx = 4;
             const labelRadiusPx = displayRadiusPx + paddingPx;
 
             const label = new PIXI.Text(weapon.name, textStyle);
@@ -432,6 +432,11 @@ export class RMUZoneRenderer {
         if (canvas.controls.rmuThreatRuler) {
             canvas.controls.rmuThreatRuler.destroy({ children: true });
             canvas.controls.rmuThreatRuler = null;
+        }
+
+        // --- Escape clause for the client setting ---
+        if (!game.settings.get(MODULE_ID, SETTINGS.SHOW_THREAT_RULER)) {
+            return;
         }
 
         if (

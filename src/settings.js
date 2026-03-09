@@ -16,6 +16,7 @@ export const SETTINGS = {
     ALPHA: "zoneAlpha",
     METRIC_FACTOR: "metricFactor",
     SHOW_LABELS: "showLabels",
+    SHOW_THREAT_RULER: "showThreatRuler",
 };
 
 /**
@@ -130,7 +131,18 @@ export function registerSettings(callbacks) {
         scope: "client",
         config: true,
         type: Boolean,
-        default: true,
+        default: false,
         onChange: callbacks.redraw,
+    });
+
+    // 7. Show Threat Ruler
+    game.settings.register(MODULE_ID, SETTINGS.SHOW_THREAT_RULER, {
+        name: "RMU-ZONES.SettingShowThreatRulerName",
+        hint: "RMU-ZONES.SettingShowThreatRulerHint",
+        scope: "client",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: redraw,
     });
 }
