@@ -1,8 +1,8 @@
 {
     "RMU-ZONES.SettingToggleTitle": "Afficher les zones de combat",
-    "RMU-ZONES.SettingToggleHint": "Active ou désactive la visualisation des facettes de combat et des cercles de portée des armes.",
+    "RMU-ZONES.SettingToggleHint": "Active ou désactive la visualisation de l'orientation en combat et des cercles de portée des armes.",
 
-    "RMU-ZONES.SettingColorFrontName": "Couleur de la zone avant",
+    "RMU-ZONES.SettingColorFrontName": "Couleur de la zone de face",
     "RMU-ZONES.SettingColorFrontHint": "Couleur pour la zone de combat avant (par défaut : Vert).",
 
     "RMU-ZONES.SettingColorFlankName": "Couleur de la zone de flanc",
@@ -15,12 +15,12 @@
     "RMU-ZONES.SettingColorSpokeHint": "Couleur des lignes divisant les secteurs (par défaut : Gris foncé).",
 
     "RMU-ZONES.SettingAlphaName": "Opacité des zones",
-    "RMU-ZONES.SettingAlphaHint": "Niveau de transparence des zones remplies (0.0 = invisible, 1.0 = opaque).",
+    "RMU-ZONES.SettingAlphaHint": "Transparence du remplissage des zones (0.0 = invisible, 1.0 = opaque).",
 
     "RMU-ZONES.SettingMetricFactorName": "Multiplicateur Mètres-Pieds",
     "RMU-ZONES.SettingMetricFactorHint": "Multiplie la distance de la grille de la scène par ce montant pour la convertir en pieds (ex. 1,5m x 3,33 = 5 pieds).",
 
-    "RMU-ZONES.ToggleTitle": "Basculer les zones de combat",
+    "RMU-ZONES.ToggleTitle": "Afficher/Masquer les zones de combat",
 
     "RMU-ZONES.SettingReachShowAllName": "Toujours afficher tous les cercles de portée",
     "RMU-ZONES.SettingReachShowAllHint": "Si activé, les cercles de portée sont toujours visibles pour tous les pions (Mode Classique). Si désactivé (Par défaut), les cercles ne s'affichent que pour les pions que vous possédez, survolez ou sélectionnez (Mode Intelligent).",
@@ -29,7 +29,7 @@
     "RMU-ZONES.SettingColorFacingHint": "Couleur de l'indicateur triangulaire d'orientation avant.",
 
     "RMU-ZONES.SettingShowLabelsName": "Afficher les étiquettes de portée",
-    "RMU-ZONES.SettingShowLabelsHint": "Si activé, les noms des armes s'afficheront horizontalement sur leurs anneaux de portée correspondants.",
+    "RMU-ZONES.SettingShowLabelsHint": "Si activé, les noms des armes s'afficheront horizontalement sur leurs anneaux de portée respectifs.",
 
     "RMU-ZONES.SettingShowThreatRulerName": "Activer la règle de menace 3D",
     "RMU-ZONES.SettingShowThreatRulerHint": "Si activé, survoler une cible tout en contrôlant un pion dessinera une ligne dynamique indiquant la portée 3D réelle et les chevrons de réussite/échec."

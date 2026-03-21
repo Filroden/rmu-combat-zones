@@ -28,83 +28,46 @@ export const SETTINGS = {
 export function registerSettings(callbacks) {
     const { redraw, derive } = callbacks;
 
+    // Small helper to capitalize the first letter so "showLabels" matches "ShowLabels" in JSON
+    const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    // Helper for repetitive client settings
+    const register = (key, type, def, config = true) => {
+        game.settings.register(MODULE_ID, key, {
+            name: `RMU-ZONES.Setting${capitalize(key)}Name`,
+            hint: `RMU-ZONES.Setting${capitalize(key)}Hint`,
+            scope: "client",
+            config,
+            type,
+            default: def,
+            onChange: redraw,
+        });
+    };
+
     // 1. Main Toggle
     game.settings.register(MODULE_ID, SETTINGS.TOGGLE, {
-        name: "RMU-ZONES.SettingToggleTitle",
-        hint: "RMU-ZONES.SettingToggleHint",
+        name: `RMU-ZONES.SettingToggleTitle`,
+        hint: `RMU-ZONES.SettingToggleHint`,
         scope: "client",
         config: true,
         type: Boolean,
         default: false,
-        onChange: () => {
-            const active = game.settings.get(MODULE_ID, SETTINGS.TOGGLE);
-            if (active) derive(); // Trigger derivation if turned ON
+        onChange: (val) => {
+            if (val) derive();
             redraw();
         },
     });
 
-    // 2. Reach "Show All" Toggle
-    game.settings.register(MODULE_ID, SETTINGS.REACH_SHOW_ALL, {
-        name: "RMU-ZONES.SettingReachShowAllName",
-        hint: "RMU-ZONES.SettingReachShowAllHint",
-        scope: "client",
-        config: true,
-        type: Boolean,
-        default: false,
-        onChange: redraw,
-    });
+    // 2. Standard Settings
+    register(SETTINGS.REACH_SHOW_ALL, Boolean, false);
+    register(SETTINGS.SHOW_LABELS, Boolean, false);
+    register(SETTINGS.SHOW_THREAT_RULER, Boolean, false);
+    register(SETTINGS.METRIC_FACTOR, Number, 3.33333);
 
-    // 3. Colours
-    const colorSettings = [
-        {
-            key: SETTINGS.COLOR_FRONT,
-            name: "RMU-ZONES.SettingColorFrontName",
-            hint: "RMU-ZONES.SettingColorFrontHint",
-            default: "#00FF00",
-        },
-        {
-            key: SETTINGS.COLOR_FACING,
-            name: "RMU-ZONES.SettingColorFacingName",
-            hint: "RMU-ZONES.SettingColorFacingHint",
-            default: "#00FF00",
-        },
-        {
-            key: SETTINGS.COLOR_FLANK,
-            name: "RMU-ZONES.SettingColorFlankName",
-            hint: "RMU-ZONES.SettingColorFlankHint",
-            default: "#FFFF00",
-        },
-        {
-            key: SETTINGS.COLOR_REAR,
-            name: "RMU-ZONES.SettingColorRearName",
-            hint: "RMU-ZONES.SettingColorRearHint",
-            default: "#FF0000",
-        },
-        {
-            key: SETTINGS.COLOR_SPOKE,
-            name: "RMU-ZONES.SettingColorSpokeName",
-            hint: "RMU-ZONES.SettingColorSpokeHint",
-            default: "#333333",
-        },
-    ];
-
-    const { ColorField } = foundry.data.fields;
-
-    colorSettings.forEach((setting) => {
-        game.settings.register(MODULE_ID, setting.key, {
-            name: setting.name,
-            hint: setting.hint,
-            scope: "client",
-            config: true,
-            type: new ColorField({ required: true, initial: setting.default }),
-            onChange: redraw,
-        });
-    });
-
-    // 4. Alpha
+    // Alpha Slider
     game.settings.register(MODULE_ID, SETTINGS.ALPHA, {
-        name: "RMU-ZONES.SettingAlphaName",
-        hint: "RMU-ZONES.SettingAlphaHint",
+        name: `RMU-ZONES.SettingAlphaName`,
+        hint: `RMU-ZONES.SettingAlphaHint`,
         scope: "client",
         config: true,
         type: Number,
@@ -113,36 +76,24 @@ export function registerSettings(callbacks) {
         onChange: redraw,
     });
 
-    // 5. Metric Factor
-    game.settings.register(MODULE_ID, SETTINGS.METRIC_FACTOR, {
-        name: "RMU-ZONES.SettingMetricFactorName",
-        hint: "RMU-ZONES.SettingMetricFactorHint",
-        scope: "client",
-        config: true,
-        type: Number,
-        default: 3.33333,
-        onChange: redraw,
-    });
+    // 3. Colours (Using Native ColorField)
+    const { ColorField } = foundry.data.fields;
+    const colorSettings = [
+        [SETTINGS.COLOR_FRONT, "#00FF00"],
+        [SETTINGS.COLOR_FACING, "#00FF00"],
+        [SETTINGS.COLOR_FLANK, "#FFFF00"],
+        [SETTINGS.COLOR_REAR, "#FF0000"],
+        [SETTINGS.COLOR_SPOKE, "#333333"],
+    ];
 
-    // 6. Show Reach Labels
-    game.settings.register(MODULE_ID, SETTINGS.SHOW_LABELS, {
-        name: "RMU-ZONES.SettingShowLabelsName",
-        hint: "RMU-ZONES.SettingShowLabelsHint",
-        scope: "client",
-        config: true,
-        type: Boolean,
-        default: false,
-        onChange: callbacks.redraw,
-    });
-
-    // 7. Show Threat Ruler
-    game.settings.register(MODULE_ID, SETTINGS.SHOW_THREAT_RULER, {
-        name: "RMU-ZONES.SettingShowThreatRulerName",
-        hint: "RMU-ZONES.SettingShowThreatRulerHint",
-        scope: "client",
-        config: true,
-        type: Boolean,
-        default: false,
-        onChange: redraw,
+    colorSettings.forEach(([key, def]) => {
+        game.settings.register(MODULE_ID, key, {
+            name: `RMU-ZONES.Setting${capitalize(key)}Name`,
+            hint: `RMU-ZONES.Setting${capitalize(key)}Hint`,
+            scope: "client",
+            config: true,
+            type: new ColorField({ required: true, initial: def }),
+            onChange: redraw,
+        });
     });
 }
