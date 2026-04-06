@@ -441,7 +441,6 @@ export class RMUZoneRenderer {
 
         // Layer 1: Antennas drawn underneath tokens
         const bgOverlay = new PIXI.Graphics();
-        bgOverlay.zIndex = -1;
         canvas.primary.addChild(bgOverlay);
         canvas.primary.rmuThreatRuler = bgOverlay;
 
