@@ -1,7 +1,7 @@
 # RMU Combat Zones
 
-![Latest Version](https://img.shields.io/badge/Version-1.6.2-blue)
-![Foundry Version](https://img.shields.io/badge/Foundry-v13-orange)
+![Latest Version](https://img.shields.io/badge/Version-1.7.0-blue)
+![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v14-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![System](https://img.shields.io/badge/System-RMU-blue)
 ![Download Count](https://img.shields.io/github/downloads/Filroden/rmu-combat-zones/rmu-combat-zones.zip)
@@ -16,9 +16,11 @@
 ## Features
 
 - **Dynamic Combat Zones:** Automatically draws the Front (Green), Flanks (Yellow), and Rear (Red) zones based on the character's facing and size.
-- **Weapon Reach Rings:** Visualizes the threat range of all natural weapons, equipped melee weapons and shields. If reach is affected by talents, etc that are automated by the system, then these are included.
+- **Facing Arrow:** An arrow outside the combat zone shows the current facing of the token.
+- **Token Rotation:** The facing arrow also acts as a draggable area allowing you to rotate a selected token you own.
+- **Weapon Reach Rings:** Visualizes the threat range of all natural weapons, equipped melee weapons and shields. If reach is affected by talents or other effects automated by the system, then these are included.
 - **3D Threat Ruler (Elevation Support):** Accurately visualises true 3D distance when tokens are at different elevations. Select your token(s) and hover over a target to generate a dynamic, bi-directional line that automatically calculates whether your weapons can physically reach the target's combat zone.
-- **Metric & Imperial Support:** Works out of the box with standard feet. Automatically detects Metric scenes and applies a configurable conversion factor (default 3.33) to ensure reach rings match the grid correctly.
+- **Metric & Imperial Support:** Works out of the box with standard feet. Automatically detects metric scenes and applies a configurable conversion factor (default 3.33) to ensure reach rings match the grid correctly.
 - **Live Updates:** Zones update instantly when:
   - Tokens rotate or move.
   - Weapons are equipped or unequipped.
@@ -29,11 +31,11 @@
 There are game settings to customise the look of the combat zone and weapon reach rings.
 
 - **Show All Reach Rings:** If enabled, all reach rings are always visible for all tokens.
-- **Custom Colors:** Don't like the default Green/Yellow/Red? You can change the color of the Front, Flank, Rear, and Spoke lines and the front-facing arrow independently using a color picker.
+- **Custom Colours:** Don't like the default Green/Yellow/Red? You can change the colour of the Front, Flank, Rear, and Spoke lines and the front-facing arrow independently using a colour picker.
 - **Opacity Control:** Adjust the transparency of the zone fills. Set it to `0.0` for no fill, or crank it up for high-contrast visibility on dark maps.
 - **Metres-to-Feet Multiplier:** For groups using metric grids, you can tweak the conversion math (Default: 1.5m = 5ft) to match your table's house rules.
 - **Show Reach Labels:** If enabled, weapon names will be displayed horizontally on their corresponding reach rings.
-- **Enable 3D Threat Ruler:** If enabled, hovering over a target while controlling a token will draw a dynamic line showing true 3D reach and hit/miss chevrons.**
+- **Enable 3D Threat Ruler:** If enabled, hovering over a target while controlling a token will draw a dynamic line showing true 3D reach and hit/miss chevrons.
 
 ## How to Use
 
