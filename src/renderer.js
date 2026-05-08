@@ -402,7 +402,7 @@ export class RMUZoneRenderer {
                 handle._isDragging = false;
 
                 // Single database update
-                token.document.update({ rotation: handle._currentRotation });
+                token.document.update({ rotation: handle._currentRotation }, { animate: false });
             };
 
             handle.on("pointerdown", onDragStart);

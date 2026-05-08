@@ -1,6 +1,6 @@
 # RMU Combat Zones
 
-![Latest Version](https://img.shields.io/badge/Version-1.7.0-blue)
+![Latest Version](https://img.shields.io/badge/Version-1.7.1-blue)
 ![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v14-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![System](https://img.shields.io/badge/System-RMU-blue)
