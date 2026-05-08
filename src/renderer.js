@@ -8,10 +8,10 @@ import { MODULE_ID, SETTINGS } from "./settings.js";
 
 // --- Internal Constants ---
 
-const VALID_ACTOR_TYPES = ["Character", "Creature"];
+const VALID_ACTOR_TYPES = new Set(["Character", "Creature"]);
 // Padding for tokens smaller than a standard grid square, matching system mechanics
 const MIN_BODY_ZONE = 2.5;
-const METRIC_UNITS = ["m", "m.", "meter", "meters", "metre", "metres"];
+const METRIC_UNITS = new Set(["m", "m.", "meter", "meters", "metre", "metres"]);
 
 /**
  * Safely triggers the system's HUD derivation logic to ensure weapon ranges are calculated.
@@ -21,7 +21,7 @@ const METRIC_UNITS = ["m", "m.", "meter", "meters", "metre", "metres"];
  * @param {boolean} [force=false] - Whether to bypass the cache and force a re-derivation.
  */
 export async function deriveDataSafe(token, force = false) {
-    if (!token.actor || !VALID_ACTOR_TYPES.includes(token.actor.type)) return;
+    if (!token.actor || !VALID_ACTOR_TYPES.has(token.actor.type)) return;
 
     if (force) token._rmuDerived = false;
     if (typeof token.document.hudDeriveExtendedData !== "function") return;
@@ -58,45 +58,22 @@ export class RMUZoneRenderer {
     static parseColor(colorValue) {
         if (typeof colorValue === "number") return colorValue;
         if (colorValue?.valueOf) return colorValue.valueOf();
-        if (typeof colorValue === "string") return parseInt(colorValue.replace("#", ""), 16);
+        if (typeof colorValue === "string") return Number.parseInt(colorValue.replace("#", ""), 16);
         return 0x000000;
     }
 
     /**
      * Primary rendering loop. Evaluates visibility, calculates geometry, and draws PIXI graphics.
      * Uses a caching system to prevent unnecessary redraws.
-     * * @param {Token} token - The token to update.
+     * @param {Token} token - The token to update.
      */
     static update(token) {
-        // Safety & Validation checks
-        if (!token.visible || !token.actor || !canvas.scene || !VALID_ACTOR_TYPES.includes(token.actor.type)) {
-            this.clear(token);
-            return;
-        }
-
-        if (!game.settings.settings.has(`${MODULE_ID}.${SETTINGS.TOGGLE}`)) return;
-        if (!game.settings.get(MODULE_ID, SETTINGS.TOGGLE)) {
+        if (!this._canUpdate(token)) {
             this.clear(token);
             return;
         }
 
         const dataSource = token.isPreview && token._original ? token._original : token;
-
-        // --- Smart Reach Logic ---
-        // Determines if reach rings should be drawn based on user settings and token state.
-        const showAllReach = game.settings.get(MODULE_ID, SETTINGS.REACH_SHOW_ALL);
-        let showReach = showAllReach || dataSource.hover || dataSource.controlled || (!game.user.isGM && dataSource.document.isOwner);
-
-        // Parse colours for PIXI
-        const drawConfig = {
-            front: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_FRONT)),
-            flank: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_FLANK)),
-            rear: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_REAR)),
-            spoke: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_SPOKE)),
-            facing: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_FACING)),
-            alpha: game.settings.get(MODULE_ID, SETTINGS.ALPHA),
-        };
-
         const rawBodyZone = Number(dataSource.actor.system.appearance?._combatZone) || 0;
         const bodyZoneFt = Math.max(rawBodyZone, MIN_BODY_ZONE);
 
@@ -105,96 +82,132 @@ export class RMUZoneRenderer {
             return;
         }
 
-        // Handle Metric to Imperial conversions for the grid distance
-        const units = canvas.scene.grid.units?.toLowerCase().trim() || "";
-        const isMetric = METRIC_UNITS.includes(units);
-        const metricFactor = game.settings.get(MODULE_ID, SETTINGS.METRIC_FACTOR);
-        const rawGridDist = canvas.scene.grid.distance;
-        const gridDistInFeet = isMetric ? rawGridDist * metricFactor : rawGridDist;
-        const gridData = {
-            gridDist: gridDistInFeet,
-            gridSize: canvas.scene.grid.size,
-        };
-
-        const rotation = token.document.rotation;
+        // Gather State and Configuration
+        const gridData = this._getGridData();
+        const drawConfig = this._getDrawConfig();
         const weaponData = this.getWeaponReaches(dataSource, bodyZoneFt);
         const reachValues = weaponData.map((w) => w.reach);
+
+        const rotation = token.document.rotation;
+        const showReach = this._shouldShowReach(dataSource);
         const showLabels = game.settings.get(MODULE_ID, SETTINGS.SHOW_LABELS);
+        const labelPlacement = this._getLabelPlacement(token);
+        const isSingleControlled = canvas.tokens.controlled.length === 1 && canvas.tokens.controlled[0] === token;
 
-        // --- Dynamic Label Placement ---
-        // Adjusts where the labels are drawn to avoid overlapping the hovered target token
-        let labelPlacement = "top";
-        if (RMUZoneRenderer.hoveredToken && canvas.tokens.controlled.includes(token)) {
-            const dy = RMUZoneRenderer.hoveredToken.center.y - token.center.y;
-            if (dy < 0) {
-                labelPlacement = "bottom";
-            }
-        }
+        const configHash = JSON.stringify(drawConfig) + `|${showReach}|${showLabels}|${labelPlacement}|${isSingleControlled}`;
 
-        // Create a hash representing the current visual state configuration
-        const configHash = JSON.stringify(drawConfig) + `|${showReach}|${showLabels}|${labelPlacement}`;
-
-        // Optimisation: Only redraw if the token's geometry, state, or the module settings have changed
-        if (!token._rmuDirty && token._rmuLastState?.rotation === rotation && token._rmuLastState?.configHash === configHash && this.arraysEqual(token._rmuLastState?.reaches, reachValues)) {
+        // Validate Cache
+        if (this._isStateCached(token, rotation, configHash, reachValues)) {
             return;
         }
 
-        // --- PIXI Container Management ---
-        let container = token.rmuZoneGraphics;
-        let graphics;
+        // PIXI Container Management
+        const { container, graphics } = this._prepareContainer(token);
 
-        if (!container) {
-            container = new PIXI.Container();
-            token.addChildAt(container, 0);
-            token.rmuZoneGraphics = container;
-            graphics = new PIXI.Graphics();
-            container.addChild(graphics);
-            container.zoneGraphics = graphics;
-        } else {
-            graphics = container.zoneGraphics;
-            graphics.clear();
-
-            // Selectively destroy text labels while reusing the main graphics object to save memory
-            for (let i = container.children.length - 1; i >= 0; i--) {
-                if (container.children[i] instanceof PIXI.Text) {
-                    container.children[i].destroy();
-                }
-            }
-        }
-
-        container.alpha = 1.0;
+        container.alpha = 1;
         container.position.set(token.w / 2, token.h / 2);
         container.rotation = Math.toRadians(rotation);
 
         const bodyRadiusPx = this.ftToPx(bodyZoneFt, gridData);
 
+        // Core Drawing Execution
         this.drawBodyZone(graphics, bodyRadiusPx, drawConfig);
         this.drawFrontArrow(graphics, bodyRadiusPx, drawConfig);
+        this.manageRotationHandle(token, bodyRadiusPx);
 
-        // Conditionally draw reach arcs and associated data
         if (showReach && reachValues.length > 0) {
-            const reachRadiiPx = reachValues.map((ft) => this.ftToPx(ft, gridData));
-            this.drawReachArcs(graphics, reachRadiiPx, drawConfig);
-
-            if (showLabels) {
-                this.drawRingLabels(container, weaponData, gridData, labelPlacement, rotation);
-            }
-
-            const maxReachPx = Math.max(...reachRadiiPx);
-            if (maxReachPx > bodyRadiusPx + 1) {
-                this.drawSectorSpokes(graphics, bodyRadiusPx, maxReachPx, drawConfig);
-            }
+            this._drawReachElements(graphics, container, drawConfig, gridData, weaponData, reachValues, showLabels, labelPlacement, rotation, bodyRadiusPx);
         }
 
-        // Cache the current state to prevent redundant future redraws
-        token._rmuLastState = {
-            rotation,
-            width: token.w,
-            height: token.h,
-            reaches: reachValues,
-            configHash,
-        };
+        // Cache Current State
+        token._rmuLastState = { rotation, width: token.w, height: token.h, reaches: reachValues, configHash };
         token._rmuDirty = false;
+    }
+
+    static _canUpdate(token) {
+        if (!token.visible || !token.actor || !canvas.scene || !VALID_ACTOR_TYPES.has(token.actor.type)) return false;
+        if (!game.settings.settings.has(`${MODULE_ID}.${SETTINGS.TOGGLE}`)) return false;
+        return game.settings.get(MODULE_ID, SETTINGS.TOGGLE);
+    }
+
+    static _shouldShowReach(dataSource) {
+        const showAllReach = game.settings.get(MODULE_ID, SETTINGS.REACH_SHOW_ALL);
+        return showAllReach || dataSource.hover || dataSource.controlled || (!game.user.isGM && dataSource.document.isOwner);
+    }
+
+    static _getDrawConfig() {
+        return {
+            front: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_FRONT)),
+            flank: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_FLANK)),
+            rear: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_REAR)),
+            spoke: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_SPOKE)),
+            facing: this.parseColor(game.settings.get(MODULE_ID, SETTINGS.COLOR_FACING)),
+            alpha: game.settings.get(MODULE_ID, SETTINGS.ALPHA),
+        };
+    }
+
+    static _getGridData() {
+        const units = canvas.scene.grid.units?.toLowerCase().trim() || "";
+        const isMetric = METRIC_UNITS.has(units);
+        const metricFactor = game.settings.get(MODULE_ID, SETTINGS.METRIC_FACTOR);
+        const rawGridDist = canvas.scene.grid.distance;
+        return {
+            gridDist: isMetric ? rawGridDist * metricFactor : rawGridDist,
+            gridSize: canvas.scene.grid.size,
+        };
+    }
+
+    static _getLabelPlacement(token) {
+        if (this.hoveredToken && canvas.tokens.controlled.includes(token)) {
+            const dy = this.hoveredToken.center.y - token.center.y;
+            if (dy < 0) return "bottom";
+        }
+        return "top";
+    }
+
+    static _isStateCached(token, rotation, configHash, reachValues) {
+        return !token._rmuDirty && token._rmuLastState?.rotation === rotation && token._rmuLastState?.configHash === configHash && this.arraysEqual(token._rmuLastState?.reaches, reachValues);
+    }
+
+    static _prepareContainer(token) {
+        let container = token.rmuZoneGraphics;
+        let graphics;
+
+        if (container) {
+            graphics = container.zoneGraphics;
+            graphics.clear();
+
+            for (let i = container.children.length - 1; i >= 0; i--) {
+                if (container.children[i] instanceof PIXI.Text) {
+                    container.children[i].destroy();
+                }
+            }
+        } else {
+            container = new PIXI.Container();
+            token.addChildAt(container, 0);
+            token.rmuZoneGraphics = container;
+
+            graphics = new PIXI.Graphics();
+            container.addChild(graphics);
+            container.zoneGraphics = graphics;
+        }
+
+        return { container, graphics };
+    }
+
+    static _drawReachElements(graphics, container, config, gridData, weaponData, reachValues, showLabels, placement, rotation, bodyRadiusPx) {
+        const reachRadiiPx = reachValues.map((ft) => this.ftToPx(ft, gridData));
+
+        this.drawReachArcs(graphics, reachRadiiPx, config);
+
+        if (showLabels) {
+            this.drawRingLabels(container, weaponData, gridData, placement, rotation);
+        }
+
+        const maxReachPx = Math.max(...reachRadiiPx);
+        if (maxReachPx > bodyRadiusPx + 1) {
+            this.drawSectorSpokes(graphics, bodyRadiusPx, maxReachPx, config);
+        }
     }
 
     /**
@@ -207,45 +220,54 @@ export class RMUZoneRenderer {
             token.rmuZoneGraphics = null;
             token._rmuLastState = null;
         }
+        if (token.rmuRotationHandle) {
+            token.rmuRotationHandle.destroy({ children: true });
+            token.rmuRotationHandle = null;
+        }
     }
 
     /**
      * Extracts and calculates the reach distances and names of all equipped melee weapons.
      * Consolidates duplicate ranges (e.g., if two weapons have a 5ft reach).
-     * * @param {Token} token - The token whose weapons to evaluate.
+     * @param {Token} token - The token whose weapons to evaluate.
      * @param {number} bodyZoneFt - The token's base body zone radius.
      * @returns {Array<{reach: number, name: string}>} Sorted array of reach objects.
      */
     static getWeaponReaches(token, bodyZoneFt) {
-        const reachMap = new Map();
-        reachMap.set(bodyZoneFt, "Combat Zone");
-
+        const reachMap = new Map([[bodyZoneFt, "Combat Zone"]]);
         const attacks = token.actor.system._attacks;
 
-        if (Array.isArray(attacks) && attacks.length > 0) {
-            for (const att of attacks) {
-                if (att.isEquipped === false) continue;
-                if (att.isRanged === true) continue;
-
-                const range = att.meleeRange;
-                if (typeof range === "number" && range > 0) {
-                    const actualReach = Math.max(range, bodyZoneFt);
-                    const currentName = reachMap.get(actualReach);
-                    const weaponName = att.attackName || "Weapon";
-
-                    // Concatenate names if multiple weapons share the exact same reach
-                    if (currentName && currentName !== "Combat Zone") {
-                        if (!currentName.includes(weaponName)) {
-                            reachMap.set(actualReach, `${currentName}, ${weaponName}`);
-                        }
-                    } else {
-                        reachMap.set(actualReach, weaponName);
-                    }
-                }
-            }
+        if (!Array.isArray(attacks) || attacks.length === 0) {
+            return this._formatReachMap(reachMap);
         }
 
-        return Array.from(reachMap.entries())
+        attacks.filter(this._isValidMeleeAttack).forEach((att) => {
+            const actualReach = Math.max(att.meleeRange, bodyZoneFt);
+            const weaponName = att.attackName || "Weapon";
+            this._addWeaponToReachMap(reachMap, actualReach, weaponName);
+        });
+
+        return this._formatReachMap(reachMap);
+    }
+
+    static _isValidMeleeAttack(att) {
+        return att.isEquipped !== false && att.isRanged !== true && typeof att.meleeRange === "number" && att.meleeRange > 0;
+    }
+
+    static _addWeaponToReachMap(map, reach, weaponName) {
+        const currentName = map.get(reach);
+
+        if (currentName && currentName !== "Combat Zone") {
+            if (!currentName.includes(weaponName)) {
+                map.set(reach, `${currentName}, ${weaponName}`);
+            }
+        } else {
+            map.set(reach, weaponName);
+        }
+    }
+
+    static _formatReachMap(map) {
+        return Array.from(map.entries())
             .map(([reach, name]) => ({ reach, name }))
             .sort((a, b) => a.reach - b.reach);
     }
@@ -304,13 +326,112 @@ export class RMUZoneRenderer {
         const height = radius * 0.2;
         const width = height * 1.5;
 
-        graphics.lineStyle(4, config.facing, 1.0);
+        graphics.lineStyle(4, config.facing, 1);
         graphics.beginFill(config.facing, 0.25);
         graphics.moveTo(-width / 2, startY);
         graphics.lineTo(0, startY + height);
         graphics.lineTo(width / 2, startY);
         graphics.closePath();
         graphics.endFill();
+    }
+
+    /**
+     * Creates an invisible, interactive hit-box on the tokens layer to handle drag rotation.
+     */
+    static manageRotationHandle(token, bodyRadiusPx) {
+        // GUARD: Only activate if exactly ONE token is selected, and this is that token.
+        const isSingleControlled = canvas.tokens.controlled.length === 1 && canvas.tokens.controlled[0] === token;
+
+        if (!isSingleControlled || !token.isOwner) {
+            if (token.rmuRotationHandle) {
+                token.rmuRotationHandle.destroy({ children: true });
+                token.rmuRotationHandle = null;
+            }
+            return;
+        }
+
+        let handle = token.rmuRotationHandle;
+
+        if (!handle) {
+            handle = new PIXI.Graphics();
+
+            canvas.tokens.addChild(handle);
+            token.rmuRotationHandle = handle;
+
+            handle.eventMode = "static";
+            handle.cursor = "pointer";
+            handle.zIndex = 1000;
+
+            handle._isDragging = false;
+            handle._startAngle = 0;
+            handle._initialRotation = 0;
+            handle._currentRotation = 0;
+
+            const onDragStart = (e) => {
+                // Intercept click before Foundry can trigger a token drag or canvas pan
+                e.stopPropagation();
+                handle._isDragging = true;
+
+                const localPos = e.data.getLocalPosition(canvas.tokens);
+                handle._startAngle = Math.atan2(localPos.y - token.center.y, localPos.x - token.center.x);
+                handle._initialRotation = token.document.rotation;
+                handle._currentRotation = token.document.rotation;
+            };
+
+            const onDragMove = (e) => {
+                if (!handle._isDragging) return;
+                e.stopPropagation(); // Keep intercepting while dragging
+
+                const localPos = e.data.getLocalPosition(canvas.tokens);
+                const currentAngle = Math.atan2(localPos.y - token.center.y, localPos.x - token.center.x);
+                const delta = currentAngle - handle._startAngle;
+
+                let newRotation = handle._initialRotation + Math.toDegrees(delta);
+                newRotation = ((newRotation % 360) + 360) % 360;
+                handle._currentRotation = newRotation;
+
+                // Visually rotate instantly
+                token.mesh.angle = newRotation;
+                if (token.rmuZoneGraphics) token.rmuZoneGraphics.rotation = Math.toRadians(newRotation);
+                handle.rotation = Math.toRadians(newRotation);
+            };
+
+            const onDragEnd = (e) => {
+                if (!handle._isDragging) return;
+                e.stopPropagation();
+                handle._isDragging = false;
+
+                // Single database update
+                token.document.update({ rotation: handle._currentRotation });
+            };
+
+            handle.on("pointerdown", onDragStart);
+            handle.on("globalpointermove", onDragMove);
+            handle.on("pointerup", onDragEnd);
+            handle.on("pointerupoutside", onDragEnd);
+        }
+
+        // Keep the handle perfectly glued to the token while idle
+        if (!handle._isDragging) {
+            handle.position.set(token.center.x, token.center.y);
+            handle.rotation = Math.toRadians(token.document.rotation);
+        }
+
+        handle.clear();
+
+        const offset = 5;
+        const startY = bodyRadiusPx + offset;
+        const height = bodyRadiusPx * 0.2;
+        const width = height * 1.5;
+        const pad = 15; // Invisible padding
+
+        const hitPolygon = new PIXI.Polygon([-width / 2 - pad, startY - pad, 0, startY + height + pad, width / 2 + pad, startY - pad]);
+
+        // Explicitly define the hitArea
+        handle.hitArea = hitPolygon;
+        handle.beginFill(0x000000, 0.01);
+        handle.drawPolygon(hitPolygon);
+        handle.endFill();
     }
 
     /**
@@ -460,7 +581,7 @@ export class RMUZoneRenderer {
         const missColorHex = drawConfig.spoke || 0x333333;
 
         const units = canvas.scene.grid.units?.toLowerCase().trim() || "";
-        const isMetric = METRIC_UNITS.includes(units);
+        const isMetric = METRIC_UNITS.has(units);
         const metricFactor = game.settings.get(MODULE_ID, SETTINGS.METRIC_FACTOR);
         const gridData = {
             gridDist: isMetric ? canvas.scene.grid.distance * metricFactor : canvas.scene.grid.distance,
@@ -483,12 +604,12 @@ export class RMUZoneRenderer {
             // Calculate 2D hypotenuse (X and Y distance)
             const dx = targetToken.center.x - attacker.center.x;
             const dy = targetToken.center.y - attacker.center.y;
-            const distance2DPx = Math.sqrt(dx * dx + dy * dy);
+            const distance2DPx = Math.hypot(dx, dy);
 
             // Calculate 3D hypotenuse (including Z elevation)
             const attackerZ = getElevationFt(attacker);
             const dzPx = this.ftToPx(Math.abs(attackerZ - targetZ), gridData);
-            const distance3DPx = Math.sqrt(distance2DPx * distance2DPx + dzPx * dzPx);
+            const distance3DPx = Math.hypot(distance2DPx, dzPx);
 
             if (distance3DPx === 0) return;
 
@@ -509,7 +630,7 @@ export class RMUZoneRenderer {
             bgOverlay.lineTo(defEndX, defEndY);
 
             const shieldSize = 14;
-            bgOverlay.lineStyle(4, missColorHex, 1.0);
+            bgOverlay.lineStyle(4, missColorHex, 1);
             bgOverlay.moveTo(defEndX + Math.cos(angle + Math.PI / 2) * shieldSize, defEndY + Math.sin(angle + Math.PI / 2) * shieldSize);
             bgOverlay.lineTo(defEndX + Math.cos(angle - Math.PI / 2) * shieldSize, defEndY + Math.sin(angle - Math.PI / 2) * shieldSize);
 
@@ -539,7 +660,7 @@ export class RMUZoneRenderer {
                 const cx = attacker.center.x + Math.cos(angle) * chevronDistPx;
                 const cy = attacker.center.y + Math.sin(angle) * chevronDistPx;
 
-                fgOverlay.lineStyle(thickness, color, 1.0);
+                fgOverlay.lineStyle(thickness, color, 1);
                 fgOverlay.moveTo(cx - Math.cos(angle - Math.PI / 4) * size, cy - Math.sin(angle - Math.PI / 4) * size);
                 fgOverlay.lineTo(cx, cy);
                 fgOverlay.lineTo(cx - Math.cos(angle + Math.PI / 4) * size, cy - Math.sin(angle + Math.PI / 4) * size);
