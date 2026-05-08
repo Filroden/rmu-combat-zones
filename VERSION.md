@@ -2,6 +2,7 @@
 
 | Version | Changes |
 | :--- | :--- |
+| **Version 1.7.1** | **BUG FIXES**<br>- Fixed animation of token rotation.|
 | **Version 1.7.0** | **NEW FEATURES**<br>- **Token Rotation:** The facing arrow can now be dragged to rotate a selected token you own.<br><br>**UNDER THE HOOD**<br>- Code review and clean up.|
 | **Version 1.6.2** | **UNDER THE HOOD**<br>- Verified compatibility with Foundry V14 with minor code change. <br>- Removed PIXI z-index on 3D threat ruler so it is not pushed under canvas in Foundry v14.|
 | **Version 1.6.1** | **IMPROVEMENTS**<br>- Small improvements to French language support (thank you Olivier).<br><br>**UNDER THE HOOD**<br>- Refactored `settings.js` to use native `ColorField` and added `parseColor` helper to `rendered.js`.<br><br>**REMOVED**<br>- Removed Spanish (`es` and `es-419`) and Swedish (`sv`) language support to comply with Foundry's AI Content Policy. If native speakers can confirm the quality of the translations, they can be quickly restored.|
