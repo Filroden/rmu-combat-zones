@@ -391,8 +391,10 @@ export class RMUZoneRenderer {
                 handle._currentRotation = newRotation;
 
                 // Visually rotate instantly
+                // Cross-module compatibility: Spin elevation shadow from the `Token Elevation Shadows` module if it exists
                 token.mesh.angle = newRotation;
                 if (token.rmuZoneGraphics) token.rmuZoneGraphics.rotation = Math.toRadians(newRotation);
+                if (token._elevationShadow) token._elevationShadow.rotation = Math.toRadians(newRotation);
                 handle.rotation = Math.toRadians(newRotation);
             };
 

@@ -2,6 +2,7 @@
 
 | Version | Changes |
 | :--- | :--- |
+| **Version 1.7.2** | **BUG FIXES**<br>- Rotating the token with the facing arrow will also rotate the shadow created by the 'Token Elevation Shadows' module.|
 | **Version 1.7.1** | **BUG FIXES**<br>- Fixed animation of token rotation.|
 | **Version 1.7.0** | **NEW FEATURES**<br>- **Token Rotation:** The facing arrow can now be dragged to rotate a selected token you own.<br><br>**UNDER THE HOOD**<br>- Code review and clean up.|
 | **Version 1.6.2** | **UNDER THE HOOD**<br>- Verified compatibility with Foundry V14 with minor code change. <br>- Removed PIXI z-index on 3D threat ruler so it is not pushed under canvas in Foundry v14.|
